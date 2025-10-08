@@ -1,7 +1,7 @@
-module.exports = (sequelize, DataTypes) => {
+const sequelize = require("../config/databaseConfig")
+const DataTypes = require("sequelize")
 
-
-const Buku = sequelize.define('buku', { // Nama model bisa 'Buku', tapi tabel harus benar
+const Buku = sequelize.define('buku', { 
     BukuID: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -22,12 +22,13 @@ const Buku = sequelize.define('buku', { // Nama model bisa 'Buku', tapi tabel ha
     },
     Gambar: { // Kolom untuk gambar
         type: DataTypes.STRING, 
-        allowNull: true, // Gambar  opsional
+        allowNull: true, 
     }
 }, {
     tableName: 'buku',
     timestamps: true,
 });
-return Buku;
-};
-// module.exports = Buku;
+
+
+
+module.exports = Buku;

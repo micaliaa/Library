@@ -6,7 +6,7 @@ const KategoriBuku = require("./KategoriBuku");
 const KategoriBukuRelasi = sequelize.define(
   "kategoribuku_relasi",
   {
-    KategoriBukuID: {
+    KategoriBukuRelasiID: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,

@@ -12,8 +12,7 @@ const KategoriBuku = sequelize.define('kategoribuku', {
         allowNull: false,
     }
 }, {
-    tableName: 'kategoribuku', // Wajib biar tidak otomatis jadi 'bukus'
-    timestamps: true,
+    tableName: 'kategoribuku', //biar g otomastis
 });
 
 module.exports = KategoriBuku;

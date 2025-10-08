@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/databaseConfig');
 
+
 const User = sequelize.define('User', {
   UserID: {
     type: DataTypes.INTEGER,
@@ -13,32 +14,31 @@ const User = sequelize.define('User', {
   },
   Password: {
     type: DataTypes.STRING,
-    allowNull: false,  // Password harus diisi
+    allowNull: false, 
   },
   Email: {
     type: DataTypes.STRING,
-    allowNull: false,  // Email harus diisi
+    allowNull: false,
   },
   NamaLengkap: {
     type: DataTypes.STRING,
-    allowNull: false,  // NamaLengkap harus diisi
+    allowNull: false, 
   },
   Alamat: {
     type: DataTypes.TEXT,
-    allowNull: false,  // Alamat harus diisi
+    allowNull: false, 
   },
   Role: {
     type: DataTypes.ENUM('Administrator', 'Petugas', 'Peminjam'),
     allowNull: false,
     defaultValue: 'Peminjam',
   },
-  AccessToken: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  }
+  
 }, {
-  tableName: 'user',  
+  tableName: 'users',  
   timestamps: true,   
 });
+
+
 
 module.exports = User;

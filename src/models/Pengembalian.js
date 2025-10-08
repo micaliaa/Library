@@ -10,43 +10,52 @@ const Pengembalian = sequelize.define('pengembalian', {
         primaryKey: true,
         autoIncrement: true,
     },
-    PeminjamanID:{
-        type:DataTypes.INTEGER,
-        allowNull:false,
-        references:{
-            model:Peminjaman,
-            key:"PeminjamanID",
-        },
-
-    },
-    BukuID:{
-        type:DataTypes.INTEGER,
-        allowNull:false,
-        references:{
-            model:Buku,
-            key:BukuID,
+    PeminjamanID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: Peminjaman,
+            key: "PeminjamanID",
         },
     },
-    TanggalPengembalian:{
-        type:DataTypes.DATE,
-        allowNull:false,
+    UserID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: User,
+            key: "UserID",
+        },
     },
-    StatusPengembalian:{
-        type:DataTypes.STRING,
+    BukuID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: Buku,
+            key: "BukuID",
+        },
     },
+    TanggalPengembalian: {
+        type: DataTypes.DATE,
+        allowNull: false,
+    },
+    StatusPengembalian: {
+        type: DataTypes.STRING,
+    },
+}, {
+    tableName: 'pengembalian',
+    timestamps: true,
+});
 
-},{
-    tableName:'pengembalian',
-    timestamps:true,
-})
+// Relasi dengan Peminjaman
+Pengembalian.belongsTo(Peminjaman, { foreignKey: "PeminjamanID", onDelete: "CASCADE" });
+Peminjaman.hasMany(Pengembalian, { foreignKey: "PeminjamanID", onDelete: "CASCADE" });
 
-Pengembalian.belongsTo(Peminjaman,{forgeinKey:"PeminjamanID",onDelete:"CASCADE"});
-Peminjaman.hasMany(Pengembalian,{forgeinKey:"PeminjamanID",onDelete:"CASCADE"});
+// Relasi dengan User
+Pengembalian.belongsTo(User, { foreignKey: "UserID", onDelete: "CASCADE" });
+User.hasMany(Pengembalian, { foreignKey: "UserID", onDelete: "CASCADE" });
 
-Pengembalian.belongsTo(User,{forgeinKey:"UserID",onDelete:"CASCADE"});
-User.hasMany(Pengembalian,{forgeinKey:"UserID", onDelete:"CASCADE"});
-
-Pengembalian.belongsTo(Buku,{forgeinKey:"BukuID",onDelete:"CASCADE"});
-Buku.hasMany(Pengembalian,{forgeinKey:"Buku", onDelete:"CASCADE"});
+// Relasi dengan Buku
+Pengembalian.belongsTo(Buku, { foreignKey: "BukuID", onDelete: "CASCADE" });
+Buku.hasMany(Pengembalian, { foreignKey: "BukuID", onDelete: "CASCADE" });
 
 module.exports = Pengembalian;

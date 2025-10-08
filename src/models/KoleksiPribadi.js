@@ -1,6 +1,5 @@
 const {DataTypes} = require("sequelize");
 const sequelize = require("../config/databaseConfig");
-const moment = require('moment/moment');
 const User = require('./User');
 const Buku = require('./Buku');
 const KoleksiPribadi=sequelize.define('koleksipribadi',{
@@ -36,9 +35,9 @@ const KoleksiPribadi=sequelize.define('koleksipribadi',{
 );
 
 KoleksiPribadi.belongsTo(User,{foreignKey:"UserID",onDelete:"CASCADE"});
-User.hasMany(KoleksiPribadi,{forgeinKey:"UserID",onDelete:"CASCADE"});
+User.hasMany(KoleksiPribadi,{foreignKey:"UserID",onDelete:"CASCADE"});
 
-KoleksiPribadi.belongsTo(Buku, {forgeinKey:"BukuID"});
-Buku.hasMany(KoleksiPribadi,{forgeinKey:"BukuID"});
+KoleksiPribadi.belongsTo(Buku, {foreignKey:"BukuID"});
+Buku.hasMany(KoleksiPribadi,{foreignKey:"BukuID"});
 
 module.exports = KoleksiPribadi;

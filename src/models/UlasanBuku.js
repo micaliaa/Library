@@ -1,24 +1,30 @@
 const {DataTypes} = require ('sequelize');
 const sequelize = require ('../config/databaseConfig');
-const moment = require ('moment/moment');
 const User = require('./User');
 const Buku = require('./Buku');
 
 const UlasanBuku= sequelize.define('ulasanbuku' , {
-    UlasanId:{
+    UlasanID:{
         type:DataTypes.INTEGER,
         primaryKey:true,
         autoIncrement:true,        
     },
-    BukuId:{
+    BukuID:{
         type:DataTypes.INTEGER,
        allowNull:false,
      references: {
   model: Buku,
   key: "BukuId",
 },
+  UserID: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'users', 
+          key: 'UserID',
+        }
 
-       
+      }
     },
   Ulasan:{
     type:DataTypes.TEXT,
@@ -30,14 +36,14 @@ const UlasanBuku= sequelize.define('ulasanbuku' , {
   }
 
 },{
-    tableName:"ulasanbuku", // nama tabel adalah 'user'
-    timestamps:true,// Jika tabel memiliki kolom createdAt dan updatedAt
+    tableName:"ulasanbuku", 
+    timestamps:true,
 })
 
-UlasanBuku.belongsTo(User, {foreignKey: "UserId", onDelete:"CASCADE"});
-User.hasMany(UlasanBuku, {foreignKey:"UserId", onDelete:"CASCADE"});
+UlasanBuku.belongsTo(User, {foreignKey: "UserID", onDelete:"CASCADE"});
+User.hasMany(UlasanBuku, {foreignKey:"UserID", onDelete:"CASCADE"});
 
-UlasanBuku.belongsTo(Buku, {foreignKey:"BukuId"});
-Buku.hasMany(UlasanBuku,{foreignKey:"BukuId"});
+UlasanBuku.belongsTo(Buku,{foreignKey:"BukuID"});
+Buku.hasMany(UlasanBuku,{foreignKey:"BukuID"});
 
 module.exports=UlasanBuku;

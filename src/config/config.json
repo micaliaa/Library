@@ -1,0 +1,25 @@
+{
+  "development": {
+    "username": "postgres",
+    "password":"postgres",
+    "database": "librarrydigital",
+    "host": "localhost",
+    "dialect": "postgres",
+    "port" : 5432,
+    "logging" : true
+  },
+  "test": {
+    "username": "postgres",
+    "password": "postgres",
+    "database": "librarrydigital",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "postgres",
+    "database": "librarrydigital",
+    "host": "localhost",
+    "dialect": "postgres"
+  }
+}
