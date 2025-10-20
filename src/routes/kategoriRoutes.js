@@ -1,11 +1,15 @@
 const kategoriController = require('../controllers/kategoriController');
 const express=require('express');
 const router=express.Router();
+const authMiddleware=require('../middleware/authMiddleware');
 
-router.get('/',kategoriController.getAllKategori);
-router.get('/:id',kategoriController.getKategoriById);
-router.post('/',kategoriController.createKategori);
-router.put('/:id',kategoriController.updateKategori);
-router.delete('/:id',kategoriController.deleteKategori);
+
+router.get('/',authMiddleware(['Administrator', 'Petugas', 'Peminjam']),kategoriController.getAllKategori);
+router.get('/:id',authMiddleware(['Administrator', 'Petugas', 'Peminjam']),kategoriController.getKategoriById);
+
+
+router.post('/', authMiddleware(['Administrator']),kategoriController.createKategori);
+router.put('/:id', authMiddleware(['Administrator']),kategoriController.updateKategori);
+router.delete('/:id', authMiddleware(['Administrator']),kategoriController.deleteKategori);
 
 module.exports= router;

@@ -45,7 +45,7 @@ class PengembalianController{
 
             }
 
-const tanggalPengembalian = new Date();
+const tnggalPengembalian = new Date();
 
             const pengembalian=await pengembalianRepository.createPengembalian(data);
             res.json(pengembalian)
@@ -53,16 +53,7 @@ const tanggalPengembalian = new Date();
             res.status(500).json({message:err.message});
         }
     }
-    async updatePengembalian(req,res){
-        try{
-            const updatedPengembalian=await pengembalianRepository.update(req.params.id,req.body);
-            if(!updatedPengembalian)return res.status(404).json({message:'pengembalian not found'});
-            res.json(updatedPengembalian);
-        }catch(err){
-            res.status(500).json({message:err.message});
-        }
-    }
-
+  
     async deletePengembalian(req,res){
         try{
             const deletedPengembalian=await pengembalianRepository.delete(req.params.id);

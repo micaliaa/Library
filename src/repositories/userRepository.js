@@ -1,8 +1,8 @@
 const User = require('../models/User');
 
 class UserRepository {
-    async findAll() {
-        return await User.findAll();
+    async findAll(condition = {}) {
+        return await User.findAll(condition);
     }
 
     async findById(id) {
@@ -29,6 +29,10 @@ class UserRepository {
         await user.destroy();
         return user;
     }
+   async count(condition = {}) {
+    return await User.count(condition);
+}
+
 }
 
 module.exports = new UserRepository();

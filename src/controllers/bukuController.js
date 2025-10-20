@@ -1,5 +1,5 @@
 const bukuRepository = require('../repositories/bukuRepository');
-
+const fs=require('fs');
 
 class BukuController{
     async getAllBooks(req,res){
@@ -22,12 +22,13 @@ class BukuController{
     async getBookById(req,res){
         try{
             const book=await bukuRepository.findById(req.params.BukuID);
-            if(!book)return res.status(401).json({message:'Book not found'});
-        }catch(err){
-            res.status(500).json({message:err.message});
-        }
-    }
+            if(!book){return res.status(401).json({message:'Book not found'});
+        }return res.status(200).json(book);
+    }catch(err){
 
+        res.status(500).json({message:err.status})
+    }
+    }
     async createBook(req,res){
         try{
             const {Judul,Penulis,Penerbit,TahunTerbit}=req.body;
@@ -109,6 +110,17 @@ class BukuController{
     }catch(err){
         res.status(500).json({message:err.message});
     }   
+  }
+  async getCountBuku(req,res){
+    try{
+       const totalBuku=await bukuRepository.countBuku()
+
+       res.status(200).json({
+        totalBuku
+    })
+    }catch(err){
+        return res.status(500).json({message:err.message});
+    }
   }
 }
 module.exports=new BukuController();

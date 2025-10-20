@@ -20,7 +20,7 @@ const Buku = sequelize.define('buku', {
     TahunTerbit: {
         type: DataTypes.INTEGER,
     },
-    Gambar: { // Kolom untuk gambar
+    Gambar: {
         type: DataTypes.STRING, 
         allowNull: true, 
     }

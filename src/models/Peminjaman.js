@@ -1,6 +1,6 @@
 const {DataTypes} = require('sequelize');
 const sequelize = require('../config/databaseConfig');
-const moment = require('moment/moment');
+
 const User = require('./User');
 const Buku = require('./Buku');
 

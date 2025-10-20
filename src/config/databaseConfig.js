@@ -13,7 +13,7 @@ const sequelize = new Sequelize(
   }
 );
 
-// Test koneksi
+
 sequelize.authenticate()
   .then(() => console.log("Database connected..."))
   .catch(err => console.error("Error connecting to database:", err));

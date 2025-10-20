@@ -54,6 +54,10 @@ class PeminjamanRepository {
         await peminjaman.destroy();
         return peminjaman;
     }
+   async countPeminjaman() {
+    return await Peminjaman.count();
+}
+
 }
 
 module.exports = new PeminjamanRepository();

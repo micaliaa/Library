@@ -2,6 +2,8 @@ const express = require('express');
 require('dotenv').config();
 const sequelize = require('./src/config/databaseConfig.js');
 const path=require('path')
+const cors=require('cors')
+    
 // Import semua routes
 const userRoutes = require('./src/routes/userRoutes.js');
 const loginRoutes = require('./src/routes/loginRoutes.js');
@@ -15,12 +17,12 @@ const ulasanRoutes=require('./src/routes/ulasanRoutes.js')
 
 const app = express();
 app.use(express.json());
-
+app.use(cors())
 //file gambar dari folder 'uploads'
 app.use('/uploads',express.static(path.join(__dirname,'uploads')));
 
 
-app.use('/users', userRoutes);
+app.use('/users', userRoutes);  
 app.use('/akun', loginRoutes);
 app.use('/buku',bukuRoutes);
 app.use('/kategori',kategoriRoutes);

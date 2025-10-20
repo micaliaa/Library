@@ -40,36 +40,30 @@ class PeminjamanController {
 
     async createPeminjaman(req, res) {
         try {
-            const peminjam = await peminjamanRepository.create(req.body);
-            res.status(201).json(peminjam);
+            const {BukuID}=req.body
+            const peminjamanData =await peminjamanRepository.create({
+                 UserID: req.user.UserID, 
+                 BukuID
+        });
+       
+          
+            res.status(201).json(peminjamanData);
         } catch (err) {
             res.status(500).json({ message: err.message });
         }
     }
-
-    async updatePeminjaman(req, res) {
-        try {
-            const updatedPeminjaman = await peminjamanRepository.update(req.params.id, req.body);
-            if (!updatedPeminjaman)
-                return res.status(404).json({ message: 'Peminjaman tidak ditemukan.' });
-
-            res.json(updatedPeminjaman);
-        } catch (error) {
-            res.status(500).json({ message: error.message });
-        }
-    }
-
-    async deletePeminjaman(req, res) {
-        try {
-            const deletedPeminjaman = await peminjamanRepository.delete(req.params.id);
-            if (!deletedPeminjaman)
-                return res.status(404).json({ message: 'Peminjaman tidak ditemukan.' });
-
-            res.json({ message: 'Peminjaman berhasil dihapus.' });
-        } catch (error) {
-            res.status(500).json({ message: error.message });
-        }
-    }
+ async countPeminjaman(req,res){
+     try{
+        const totalPeminjaman=await peminjamanRepository.countPeminjaman()
+ 
+        res.status(200).json({
+         totalPeminjaman
+     });
+     }catch(err){
+         return res.status(500).json({message:err.message});
+     }
+  }
+  
 }
 
 module.exports = new PeminjamanController();
