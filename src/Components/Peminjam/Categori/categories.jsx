@@ -67,9 +67,9 @@ const Categories = () => {
         if (!token) throw new Error("User belum login");
 
         const [bookRes, categoryRes, relasiRes] = await Promise.all([
-          axios.get("http://localhost:3000/buku", { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get("http://localhost:3000/kategori", { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get("http://localhost:3000/kategoriRelasi", { headers: { Authorization: `Bearer ${token}` } }),
+                  api.get("/buku", { headers: authHeaders() }),
+                  api.get("/kategori", { headers: authHeaders() }),
+                  api.get("/kategoriRelasi", { headers: authHeaders() }),
         ]);
 
         setBooks(bookRes.data);

@@ -11,7 +11,8 @@ import Book from "./Components/Peminjam/Buku/books";
 import Detail from "./Components/Peminjam/Detail/buku"
 import Search from "./Components/Peminjam/Buku/search";
 import Categories from "./Components/Peminjam/Categori/categories";
-import Peminjaman from "./Components/Peminjam/Peminjaman/peminjaman"
+import Peminjaman from "./Components/Peminjam/Peminjaman/peminjaman";
+import Collection from "./Components/Peminjam/Collection/collection";
 
 function App() {
 
@@ -30,6 +31,7 @@ function App() {
         <Route path="/search/:keyword" element={<Search />} />
         <Route path="/categori" element={<Categories/>} />
         <Route path="/peminjaman" element={<Peminjaman/>} />
+        <Route path="/collection" element={<Collection/>} />
 
       </Routes>
    </BrowserRouter>

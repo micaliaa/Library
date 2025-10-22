@@ -24,7 +24,7 @@ const SidebarPeminjam = () =>{
                     <a href="/dashboard"className="flex items-center  hover:text-[#D29D6A] font-medium"> <FiHome className="w-5 h-5 mr-5" />  Dashboard   </a>
                     <a href="/books"className="flex items-center  hover:text-[#D29D6A] font-medium"> <PiBooksDuotone className="w-5 h-5 mr-5" />  Books </a>
                     <a href="/categori"className="flex items-center  hover:text-[#D29D6A] font-medium"> <FiTag className="w-5 h-5 mr-5" />  Cateories </a>
-                    <a href="#"className="flex items-center  hover:text-[#D29D6A] font-medium"> <MdOutlineCollectionsBookmark className="w-5 h-5 mr-5" />  Collection </a>
+                    <a href="/collection"className="flex items-center  hover:text-[#D29D6A] font-medium"> <MdOutlineCollectionsBookmark className="w-5 h-5 mr-5" />  Collection </a>
                     <a href="/peminjaman"className="flex items-center  hover:text-[#D29D6A] font-medium">   <FiClock className="w-5 h-5 mr-5" /> Borrowings </a>
                 </div>
               </nav>

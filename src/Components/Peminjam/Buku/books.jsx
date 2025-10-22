@@ -4,6 +4,7 @@ import axios from "axios";
 import Hero2 from "../../../Components/Peminjam/Hero/heroBooks";
 import {api,authHeaders} from "../../../../src/api"
 import SidebarPeminjam from "../Dashboard/sidebarPeminjam";
+import { TbChecklist } from "react-icons/tb";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -14,8 +15,52 @@ const Book = () => {
   const [loading, setLoading] = useState(true);
   const [borrowingIds, setBorrowingIds] = useState([]);
   const [borrowed, setBorrowed] = useState([]);
+  const [activeBorrowCount, setActiveBorrowCount] = useState(0);
   const [search, setSearch] = useState("");
-  const navigate = useNavigate();
+  // Tambahkan state untuk koleksi
+const [collection, setCollection] = useState(() => {
+  const saved = localStorage.getItem("collection");
+  return saved ? JSON.parse(saved) : [];
+});
+
+// Fungsi handle tambah ke koleksi
+const handleAddToCollection = async (BukuID) => {
+  const UserID = localStorage.getItem("UserID");
+  if (!UserID) {
+    alert("User belum login! Silakan login terlebih dahulu.");
+    return;
+  }
+
+  // Cek dulu apakah buku sudah ada di koleksi
+  if (collection.includes(BukuID)) {
+    alert("Buku sudah ada di koleksi!");
+    return;
+  }
+
+  try {
+    const response = await api.post(
+      "/koleksi", // endpoint yang kamu buat di backend
+      { UserID, BukuID },
+      { headers: authHeaders() }
+    );
+
+    // Update state dan localStorage
+    setCollection((prev) => {
+      const updated = [...prev, BukuID];
+      localStorage.setItem("collection", JSON.stringify(updated));
+      return updated;
+    });
+
+    alert("📚 Buku berhasil ditambahkan ke koleksi!");
+  } catch (err) {
+    console.error(err);
+    alert("Gagal menambahkan buku ke koleksi!");
+  }
+};
+
+
+
+
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -38,37 +83,82 @@ const Book = () => {
     fetchBooks();
   }, []);
 
-  const handlePinjamBuku = async (BukuID) => {
+  // 🔹 Cek jumlah buku aktif yang sedang dipinjam user
+  const fetchActiveBorrowings = async () => {
     const UserID = localStorage.getItem("UserID");
-    if (!UserID) {
-      alert("User belum login! Silakan login terlebih dahulu.");
-      return;
-    }
+    if (!UserID) return;
 
-    setBorrowingIds((prev) => [...prev, BukuID]);
     try {
-     const response = await api.post("/peminjaman", { UserID, BukuID }, { headers: authHeaders() });
-
-
-      const { PeminjamanID, TanggalPengembalian } = response.data;
-      if (!PeminjamanID) {
-        alert("Terjadi kesalahan, data peminjaman tidak lengkap.");
-        return;
-      }
-
-      alert(
-        `Buku berhasil dipinjam!\nID Peminjaman: ${PeminjamanID}\nTanggal Pengembalian: ${
-          TanggalPengembalian || "Belum ditentukan"
-        }`
+      const response = await api.get(`/peminjaman/user/${UserID}`, {
+        headers: authHeaders(),
+      });
+      const active = response.data.filter(
+        (item) => item.StatusPeminjaman === "Dipinjam"
       );
-      setBorrowed((prev) => [...prev, BukuID]);
+      setActiveBorrowCount(active.length);
     } catch (err) {
-      console.error(err);
-      alert("Gagal meminjam buku! Silakan coba lagi.");
-    } finally {
-      setBorrowingIds((prev) => prev.filter((id) => id !== BukuID));
+      console.error("Gagal memuat data peminjaman aktif:", err);
     }
   };
+
+
+  // Tambahkan di atas fungsi handlePinjamBuku
+const checkActiveBorrowings = async (UserID) => {
+  try {
+    const response = await api.get(`/peminjaman/user/${UserID}`, {
+      headers: authHeaders(),
+    });
+ // Ambil hanya yang statusnya "Dipinjam"
+    const activeBorrowings = response.data.filter(
+      (item) => item.StatusPeminjaman === "Dipinjam"
+    );
+    return activeBorrowings.length;
+  } catch (err) {
+    console.error("Gagal cek jumlah peminjaman:", err);
+    return 0;
+  }
+};
+
+
+
+
+  const handlePinjamBuku = async (BukuID) => {
+  const UserID = localStorage.getItem("UserID");
+  if (!UserID) {
+    alert("User belum login! Silakan login terlebih dahulu.");
+    return;
+  }
+
+  // 🔹 Cek dulu jumlah peminjaman aktif user
+  const activeCount = await checkActiveBorrowings(UserID);
+  if (activeCount >= 3) {
+    alert("❌ Kamu sudah mencapai batas maksimal 3 buku aktif. Kembalikan salah satu buku dulu.");
+    return;
+  }
+
+  setBorrowingIds((prev) => [...prev, BukuID]);
+  try {
+    const response = await api.post(
+      "/peminjaman",
+      { UserID, BukuID },
+      { headers: authHeaders() }
+    );
+
+    const { PeminjamanID, TanggalPengembalian } = response.data;
+    alert(
+      `📚 Buku berhasil dipinjam!\nID Peminjaman: ${PeminjamanID}\nTanggal Pengembalian: ${
+        TanggalPengembalian || "Belum ditentukan"
+      }`
+    );
+    setBorrowed((prev) => [...prev, BukuID]);
+  } catch (err) {
+    console.error(err);
+    alert("Gagal meminjam buku! Silakan coba lagi.");
+  } finally {
+    setBorrowingIds((prev) => prev.filter((id) => id !== BukuID));
+  }
+};
+
 
   if (loading) return <p className="text-center mt-6">Loading data buku...</p>;
   if (error) return <p className="text-center text-red-600 mt-6">{error}</p>;
@@ -125,7 +215,7 @@ const Book = () => {
                     key={book.BukuID}
                     className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0"
                     style={{
-                      width: "280px",
+                      width: "300px",
                       height: "160px",
                       overflow: "hidden",
                     }}
@@ -159,9 +249,11 @@ const Book = () => {
                             : "4.5"}
                         </p>
                       </div>
+                      {/* Tombol Koleksi */}
+                      <div className="flex items-center gap-2 mt-2">
+
 
                       {/* Tombol */}
-                      <div className="flex items-center gap-2 mt-2">
                         <Link
                           to={`/buku/${book.BukuID}`}
                           className="px-3 py-1 text-xs bg-[#D29D6A] text-white hover:bg-[#B67438] transition"
@@ -180,11 +272,25 @@ const Book = () => {
                           }`}
                         >
                           {isBorrowed
-                            ? "✅ Borrowed"
+                            ? "✅ Borrowed" 
                             : isBorrowing
                             ? "⏳..."
                             : "Borrow"}
+
+                          
+
                         </button>
+                         <button
+    onClick={() => handleAddToCollection(book.BukuID)}
+    disabled={collection.includes(book.BukuID)}
+    className={`px-3 py-1 text-xs  transition  ${
+      collection.includes(book.BukuID)
+        ? "bg-[#ad6826] text-white text-xl"
+        : "bg-[#D29D6A] text-white hover:bg-[#ad6826]"
+    }`}
+  >
+    {collection.includes(book.BukuID) ? <TbChecklist /> : "+"}
+  </button>
                       </div>
                     </div>
                   </div>
