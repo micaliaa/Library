@@ -8,6 +8,9 @@ const Buku = () => {
   const [book, setBook] = useState(null);
   const [error, setError] = useState("");
 
+  // Tambahan: state untuk pinjam buku
+  const [isBorrowing, setIsBorrowing] = useState(false);
+
   // Fungsi render bintang rating
   const renderStars = (rating) => {
     const stars = [];
@@ -36,9 +39,57 @@ const Buku = () => {
         setError("Buku tidak ditemukan");
       }
     };
-
     fetchBook();
   }, [id]);
+
+  // 🔹 Fungsi cek jumlah peminjaman aktif user
+  const checkActiveBorrowings = async (UserID) => {
+    try {
+      const response = await api.get(`/peminjaman/user/${UserID}`, {
+        headers: authHeaders(),
+      });
+      const activeBorrowings = response.data.filter(
+        (item) => item.StatusPeminjaman === "Dipinjam"
+      );
+      return activeBorrowings.length;
+    } catch (err) {
+      console.error("Gagal cek jumlah peminjaman:", err);
+      return 0;
+    }
+  };
+
+  // 🔹 Fungsi pinjam buku
+  const handlePinjamBuku = async () => {
+    const UserID = localStorage.getItem("UserID");
+    if (!UserID) {
+      alert("User belum login! Silakan login terlebih dahulu.");
+      return;
+    }
+
+    setIsBorrowing(true);
+
+    const activeCount = await checkActiveBorrowings(UserID);
+    if (activeCount >= 3) {
+      alert("❌ Kamu sudah mencapai batas maksimal 3 buku aktif. Kembalikan salah satu buku dulu.");
+      setIsBorrowing(false);
+      return;
+    }
+
+    try {
+      const response = await api.post(
+        "/peminjaman",
+        { UserID, BukuID: book.BukuID },
+        { headers: authHeaders() }
+      );
+      const { PeminjamanID, TanggalPengembalian } = response.data;
+      alert(`📚 Buku berhasil dipinjam!\nID Peminjaman: ${PeminjamanID}\nTanggal Pengembalian: ${TanggalPengembalian || "Belum ditentukan"}`);
+    } catch (err) {
+      console.error(err);
+      alert("Gagal meminjam buku! Silakan coba lagi.");
+    } finally {
+      setIsBorrowing(false);
+    }
+  };
 
   if (error) return <p className="text-red-600">{error}</p>;
   if (!book) return <p className="text-gray-500">Loading book...</p>;
@@ -90,6 +141,17 @@ const Buku = () => {
               Buku ini diterbitkan oleh <strong>{book.Penerbit}</strong> pada tahun{" "}
               <strong>{book.TahunTerbit}</strong>.
             </p>
+
+            {/* Tombol Pinjam */}
+            <button
+              onClick={handlePinjamBuku}
+              disabled={isBorrowing}
+              className={`mt-4 px-6 py-2 rounded-lg text-white font-semibold ${
+                isBorrowing ? "bg-gray-400 cursor-not-allowed" : "bg-[#7B3F00] hover:bg-[#A15C2D]"
+              }`}
+            >
+              {isBorrowing ? "⏳ Meminjam..." : "📘 Pinjam Buku"}
+            </button>
           </div>
 
           {/* Info tambahan */}

@@ -1,17 +1,19 @@
+// DashboardFinal.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
+import { TbBooks, TbFolder } from "react-icons/tb";
 import SidebarPeminjam from "./sidebarPeminjam";
 import Userdetail from "../User/UserDetail";
 import Hero from "../Hero/hero";
 import Footer from "../../../Components/Peminjam/Footer/footer";
 import { api, authHeaders } from "../../../../src/api";
 
+// Komponen kategori tetap sama
 const CategoryDashboard = ({ categories, selectedCategory, onSelect }) => (
   <div className="mt-6">
-    <h3 className="text-xl font-semibold text-[#7B3F00] mb-2">Categories</h3>
+    <h3 className="text-2xl font-semibold text-white mb-2 bg-[#B67438] px-6 py-2 rounded">Categories</h3>
     <div className="flex gap-2 overflow-x-auto">
-      {/* Tombol All */}
       <button
         onClick={() => onSelect(null)}
         className={`px-4 py-1 rounded-lg border ${
@@ -22,8 +24,6 @@ const CategoryDashboard = ({ categories, selectedCategory, onSelect }) => (
       >
         All
       </button>
-
-      {/* Tombol kategori */}
       {categories.map((cat) => (
         <button
           key={cat.KategoriID}
@@ -41,6 +41,7 @@ const CategoryDashboard = ({ categories, selectedCategory, onSelect }) => (
   </div>
 );
 
+// Card buku final dengan line-clamp dan tooltip
 const BookCard = ({ book, navigate }) => (
   <div className="bg-[#F5E6D3] p-4 rounded-xl shadow hover:shadow-lg transition flex flex-col min-w-[200px] max-w-[220px]">
     <img
@@ -48,8 +49,20 @@ const BookCard = ({ book, navigate }) => (
       alt={book.Judul || "Book"}
       className="w-full h-36 object-cover rounded-lg mb-3 hover:scale-105 transition"
     />
-    <h4 className="font-semibold text-[#7B3F00] text-sm sm:text-base">{book.Judul}</h4>
-    <p className="text-xs sm:text-sm text-[#5A4A42] mt-1">By {book.Penulis}</p>
+    <h4
+      className="font-semibold text-[#7B3F00] text-sm sm:text-base line-clamp-2"
+      title={book.Judul}
+    >
+      {book.Judul}
+    </h4>
+    <p className="text-xs sm:text-sm text-[#5A4A42] mt-1 line-clamp-2" title={book.Penulis}>
+      By : {book.Penulis}
+    </p>
+    <p className="text-xs sm:text-sm text-[#5A4A42] line-clamp-1" title={book.Penerbit}>
+      Publisher: {book.Penerbit}
+    </p>
+    <p className="text-xs sm:text-yellow-600 mt-1">⭐ {book.RataRataRating ? Number(book.RataRataRating).toFixed(1) : "4.5"}</p>
+
     <button
       className="mt-2 bg-[#D29D6A] text-white px-2 py-1 rounded-lg text-xs sm:text-sm hover:bg-[#B67438]"
       onClick={() => navigate(`/buku/${book.BukuID || ""}`)}
@@ -68,6 +81,7 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -78,14 +92,28 @@ const Dashboard = () => {
         const userID = localStorage.getItem("UserID");
         if (!token || !userID) return;
 
-        const [userRes, bookRes, categoryRes, relasiRes] = await Promise.all([
+        const [
+          userRes,
+          bookRes,
+          categoryRes,
+          relasiRes,
+          peminjamanRes,
+          koleksiRes
+        ] = await Promise.all([
           api.get(`/users/${userID}`, { headers: authHeaders() }),
           api.get("/buku", { headers: authHeaders() }),
           api.get("/kategori", { headers: authHeaders() }),
-          api.get("/kategoriRelasi", { headers: authHeaders() }), // sudah fix typo
+          api.get("/kategoriRelasi", { headers: authHeaders() }),
+          api.get(`/peminjaman/user/${userID}`, { headers: authHeaders() }),
+          api.get(`/koleksi/user/${userID}`, { headers: authHeaders() }),
         ]);
 
-        setUser(userRes.data);
+        setUser({
+          ...userRes.data,
+          ActiveBorrowCount: peminjamanRes.data.filter(b => b.StatusPeminjaman === "Dipinjam").length,
+          CollectionCount: koleksiRes.data.length,
+        });
+
         setBooks(bookRes.data);
         setFilterBook(bookRes.data);
         setCategories(categoryRes.data);
@@ -93,8 +121,11 @@ const Dashboard = () => {
       } catch (err) {
         console.error(err);
         setError("Gagal mengambil data");
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -158,17 +189,35 @@ const Dashboard = () => {
 
         <Hero username={user?.Username || "Guest"} />
 
+        {/* Count Active Borrow & Collection di bawah Hero */}
+        {user && (
+          <div className="flex gap-6 mt-4 mb-6 text-[#7B3F00] font-semibold">
+            <div className="flex items-center gap-1 bg-[#ffecd4] rounded px-6 py-4">
+              <TbBooks /> <span>{user.ActiveBorrowCount} Active Borrows</span>
+            </div>
+            <div className="flex items-center gap-1 bg-[#ffecd4] rounded px-7 py-4">
+              <TbFolder /> <span>{user.CollectionCount} Collection</span>
+            </div>
+          </div>
+        )}
+
         <section className="mb-10">
-          <h3 className="text-2xl font-semibold text-[#FFF9F3] mb-4 bg-[#B67438] p-2 rounded">
+          <h3 className="text-2xl font-semibold text-white mb-2 bg-[#B67438] px-6 py-2 rounded">
             📖 New Books
           </h3>
           <div className="overflow-x-auto">
             <div className="flex gap-4 w-max flex-wrap max-h-[480px]">
-              {newBooks.length === 0 ? (
-                <p className="text-gray-500">Loading books...</p>
-              ) : (
-                newBooks.map((book) => <BookCard key={book.BukuID} book={book} navigate={navigate} />)
-              )}
+              {loading
+                ? Array.from({ length: 6 }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#EDE0D4] p-4 rounded-xl animate-pulse min-w-[200px] max-w-[220px] h-56"
+                    ></div>
+                  ))
+                : newBooks.length === 0
+                ? <p className="text-gray-500">No books found</p>
+                : newBooks.map((book) => <BookCard key={book.BukuID} book={book} navigate={navigate} />)
+              }
             </div>
           </div>
         </section>

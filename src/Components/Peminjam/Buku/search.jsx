@@ -1,42 +1,53 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
+// SearchBuku.js
+import React, { useState } from "react";
 
-const Searchbuku = () => {
-  const { keyword } = useParams();
-  const [hasil, setHasil] = useState([]);
+const SearchBuku = ({ booksData, setFilteredBooks }) => {
+  const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const res = await axios.get(`http://localhost:3000/buku/book/search/${keyword}`);
-      setHasil(res.data);
-    };
-    fetchData();
-  }, [keyword]);
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!booksData) return;
+
+    const filtered = booksData.filter((book) => {
+      const data = book.buku || book;
+      return (
+        (data.Judul || "").toLowerCase().includes(search.toLowerCase()) ||
+        (data.Penulis || "").toLowerCase().includes(search.toLowerCase()) ||
+        (data.Penerbit || "").toLowerCase().includes(search.toLowerCase())
+      );
+    });
+
+    setFilteredBooks(filtered);
+  };
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+
+    if (value === "") {
+      setFilteredBooks(booksData);
+    }
+  };
 
   return (
-    <div className="p-4 pt-20">
-      <h2 className="text-2xl font-semibold mb-4">Search results for: <span className="text-[#7B3F00]">{keyword}</span></h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {hasil.length === 0 ? (
-          <p className="col-span-full text-gray-500">no book found</p>
-        ) : (
-          hasil.map((book) => (
-            <Link to={`/detail/${book.BukuID}`} key={book.BukuID} className="bg-white p-4 shadow rounded">
-              <img
-                    src={`http://localhost:3000/${book.Gambar ? book.Gambar.replace(/\\/g, "/") : "uploads/default-book.jpg"}`}
-                    alt={book.Judul}
-                    className="h-[200px] sm:h-[220px] w-full object-cover"
-                  />
-              <h3 className="font-semibold">{book.Judul}</h3>
-              <p className="text-sm text-gray-500">Author: {book.Penulis}</p>
-            </Link>
-          ))
-        )}
-      </div>
+    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+      <form onSubmit={handleSearch} className="flex w-full sm:w-auto gap-2">
+        <input
+          type="text"
+          placeholder="Search for books..."
+          value={search}
+          onChange={handleChange}
+          className="w-full sm:w-[300px] px-4 py-2 rounded-lg border-2 border-[#7B3F00] text-[#7B3F00] focus:outline-none focus:ring-2 focus:ring-[#7B3F00]"
+        />
+        <button
+          type="submit"
+          className="px-4 py-2 bg-[#7B3F00] text-white rounded-lg hover:bg-[#9C5A1F]"
+        >
+          Search
+        </button>
+      </form>
     </div>
   );
 };
 
-export default Searchbuku;
+export default SearchBuku;

@@ -4,7 +4,7 @@ import Library from '../../../../src/assets/Library2_.jpg';
 const HeroCard = ({username}) => {
   return (
 
-    <div className="relative w-full h-64 rounded-xl overflow-hidden shadow-lg mb-8">
+    <div className="relative w-full h-64 rounded-xl overflow-hidden shadow-lg mb-1">
       
       
       <img

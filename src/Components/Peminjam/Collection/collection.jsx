@@ -1,27 +1,43 @@
+// Collection.js
 import React, { useEffect, useState } from "react";
 import SidebarPeminjam from "../Dashboard/sidebarPeminjam";
 import Hero2 from "../../../Components/Peminjam/Hero/heroBooks";
 import { api, authHeaders } from "../../../../src/api";
 import { Link } from "react-router-dom";
+import { TbBooks, TbFolder } from "react-icons/tb";
+import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+import SearchBuku from "../Buku/search";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Collection = () => {
   const [collection, setCollection] = useState([]);
-  const [search, setSearch] = useState("");
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
 
   const UserID = localStorage.getItem("UserID");
 
   const fetchCollection = async () => {
     if (!UserID) return;
     try {
-      const res = await api.get(`/koleksi/user/${UserID}`, {
-        headers: authHeaders(),
+      const [resCollection, resUser, resBorrow] = await Promise.all([
+        api.get(`/koleksi/user/${UserID}`, { headers: authHeaders() }),
+        api.get(`/users/${UserID}`, { headers: authHeaders() }),
+        api.get(`/peminjaman/user/${UserID}`, { headers: authHeaders() }),
+      ]);
+
+      setCollection(resCollection.data);
+      setFilteredBooks(resCollection.data);
+
+      setUser({
+        ...resUser.data,
+        ActiveBorrowCount: resBorrow.data.filter(b => b.StatusPeminjaman === "Dipinjam").length,
+        CollectionCount: resCollection.data.length
       });
-      // res.data sekarang sudah array Buku dengan RataRataRating
-      setCollection(res.data);
+
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -41,24 +57,22 @@ const Collection = () => {
     if (!confirmRemove) return;
 
     try {
-      await api.delete(`/koleksi/koleksi`, {
-        headers: authHeaders(),
-        data: { UserID, BukuID },
-      });
-
-      setCollection((prev) => prev.filter((b) => b.BukuID !== BukuID));
+      await api.delete("/koleksi/by-user-book", {
+  headers: authHeaders(),
+  data: { UserID, BukuID },
+});
+      setCollection(prev => prev.filter(b => b.BukuID !== BukuID));
+      setFilteredBooks(prev => prev.filter(b => b.BukuID !== BukuID));
+      setUser(prev => ({
+        ...prev,
+        CollectionCount: (prev.CollectionCount || 1) - 1
+      }));
+      toast.success("📚 Buku berhasil dihapus dari koleksi!");
     } catch (err) {
-      console.error(err);
-      alert("Gagal menghapus buku dari koleksi.");
+      console.error("Remove error:", err.response || err);
+      toast.error("❌ Gagal menghapus buku dari koleksi.");
     }
   };
-
-  const filteredBooks = collection.filter(
-    (book) =>
-      book.Judul.toLowerCase().includes(search.toLowerCase()) ||
-      (book.Penulis || "").toLowerCase().includes(search.toLowerCase()) ||
-      (book.Penerbit || "").toLowerCase().includes(search.toLowerCase())
-  );
 
   if (loading) return <p className="text-center mt-6">Loading koleksi...</p>;
   if (error) return <p className="text-center mt-6 text-red-600">{error}</p>;
@@ -85,68 +99,89 @@ const Collection = () => {
       <div className="flex-1 mt-10 px-4">
         <Hero2 />
 
-        <div className="flex justify-center mb-6 gap-2">
-          <input
-            type="text"
-            placeholder="Cari buku dalam koleksi..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full max-w-[400px] px-4 py-2 rounded-lg border-2 border-[#7B3F00] text-[#7B3F00] focus:outline-none focus:ring-2 focus:ring-[#7B3F00]"
+        {/* Count + Search */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+          {user && (
+            <div className="flex gap-4 text-white font-semibold">
+              <div className="flex items-center gap-1 bg-[#7B3F00] rounded px-6 py-4">
+                <TbBooks /> <span>{user.ActiveBorrowCount} Active Borrows</span>
+              </div>
+              <div className="flex items-center gap-1 bg-[#7B3F00] rounded px-7 py-4">
+                <TbFolder /> <span>{user.CollectionCount} Collection</span>
+              </div>
+            </div>
+          )}
+
+          <SearchBuku
+            booksData={collection}
+            setFilteredBooks={setFilteredBooks}
+            className="ml-auto"
           />
         </div>
 
+        {/* Book Cards per row */}
         <div className="space-y-6 border-t-10 border-[#B67438] pt-4">
           {rows.map((row, rowIndex) => (
             <div
               key={rowIndex}
-              className="flex justify-center gap-6 pb-4 border-b-10 border-[#B67438]"
+              className="flex flex-wrap justify-center gap-6 pb-4 border-b-10 border-[#B67438]"
             >
-              {row.map((book) => (
-                <div
-                  key={book.BukuID}
-                  className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0"
-                  style={{ width: "280px", height: "160px", overflow: "hidden" }}
-                >
-                  <img
-                    src={book.Gambar ? `${API_URL}/${book.Gambar}` : "/placeholder.png"}
-                    alt={book.Judul}
-                    className="w-[110px] h-full object-cover"
-                  />
-                  <div className="flex flex-col justify-between p-3 flex-1">
-                    <div>
-                      <h3 className="text-base font-bold text-gray-900 truncate">
-                        {book.Judul}
-                      </h3>
-                      <p className="text-xs text-gray-700 mt-1">
-                        <strong>Author:</strong> {book.Penulis || "-"}
-                      </p>
-                      <p className="text-xs text-gray-700">
-                        <strong>Publisher:</strong> {book.Penerbit || "-"}
-                      </p>
-                      {/* <p className="text-xs text-yellow-600 mt-1">
-                        ⭐ {book.RataRataRating ? Number(book.RataRataRating).toFixed(1) : "0.0"}
-                      </p> */}
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <Link
-                        to={`/buku/${book.BukuID}`}
-                        className="px-3 py-1 text-xs bg-[#D29D6A] text-white hover:bg-[#B67438] transition"
-                      >
-                        View
-                      </Link>
-                      <button
-                        onClick={() => handleRemove(book.BukuID)}
-                        className="px-3 py-1 text-xs bg-red-500 text-white hover:bg-red-600 transition"
-                      >
-                        ❌ Remove
-                      </button>
+              {row.map((book) => {
+                const data = book.buku || book;
+                return (
+                  <div
+                    key={book.KoleksiID}
+                    className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0 w-[280px] h-[160px] overflow-hidden"
+                  >
+                    <img
+                      src={
+                        data.Gambar
+                          ? `${API_URL}/${data.Gambar}`
+                          : "/placeholder.png"
+                      }
+                      alt={data.Judul}
+                      className="w-[110px] h-full object-cover"
+                    />
+                    <div className="flex flex-col justify-between p-3 flex-1">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900 truncate">
+                          {data.Judul}
+                        </h3>
+                        <p className="text-xs text-gray-700 mt-1">
+                          <strong>Author:</strong> {data.Penulis || "-"}
+                        </p>
+                        <p className="text-xs text-gray-700">
+                          <strong>Publisher:</strong> {data.Penerbit || "-"}
+                        </p>
+                        <p className="text-xs text-yellow-600 mt-1">
+                          ⭐ {data.RataRataRating
+                            ? Number(data.RataRataRating).toFixed(1)
+                            : "0.0"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Link
+                          to={`/buku/${data.BukuID}`}
+                          className="px-3 py-1 text-xs bg-[#D29D6A] text-white hover:bg-[#B67438] transition"
+                        >
+                          View
+                        </Link>
+                        <button
+                          onClick={() => handleRemove(data.BukuID)}
+                          className="px-3 py-1 text-xs bg-red-500 text-white hover:bg-red-600 transition"
+                        >
+                          ❌ Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ))}
         </div>
+
+        <ToastContainer position="top-right" autoClose={2500} hideProgressBar />
       </div>
     </div>
   );
