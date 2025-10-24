@@ -1,4 +1,3 @@
-// Collection.js
 import React, { useEffect, useState } from "react";
 import SidebarPeminjam from "../Dashboard/sidebarPeminjam";
 import Hero2 from "../../../Components/Peminjam/Hero/heroBooks";
@@ -6,8 +5,9 @@ import { api, authHeaders } from "../../../../src/api";
 import { Link } from "react-router-dom";
 import { TbBooks, TbFolder } from "react-icons/tb";
 import { ToastContainer, toast } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 import SearchBuku from "../Buku/search";
+import { normalizeStatuses } from "../../../../src/Components/utils/translateStatus";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -20,69 +20,91 @@ const Collection = () => {
 
   const UserID = localStorage.getItem("UserID");
 
-  const fetchCollection = async () => {
-    if (!UserID) return;
-    try {
-      const [resCollection, resUser, resBorrow] = await Promise.all([
-        api.get(`/koleksi/user/${UserID}`, { headers: authHeaders() }),
-        api.get(`/users/${UserID}`, { headers: authHeaders() }),
-        api.get(`/peminjaman/user/${UserID}`, { headers: authHeaders() }),
-      ]);
-
-      setCollection(resCollection.data);
-      setFilteredBooks(resCollection.data);
-
-      setUser({
-        ...resUser.data,
-        ActiveBorrowCount: resBorrow.data.filter(b => b.StatusPeminjaman === "Dipinjam").length,
-        CollectionCount: resCollection.data.length
-      });
-
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setError("Gagal mengambil koleksi.");
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchCollection = async () => {
+      if (!UserID) return;
+      try {
+        // ambil semua data paralel
+        const [resCollection, resUser, resBorrow] = await Promise.all([
+          api.get(`/koleksi/user/${UserID}`, { headers: authHeaders() }),
+          api.get(`/users/${UserID}`, { headers: authHeaders() }),
+          api.get(`/peminjaman/user/${UserID}`, { headers: authHeaders() }),
+        ]);
+
+       
+        const normalizedBorrowings = normalizeStatuses(resBorrow.data, "en");
+
+        //  merge dengan localStorage biar data "Finished" tetap sinkron
+        const saved = JSON.parse(localStorage.getItem("borrowings") || "[]");
+        const mergedBorrowings = normalizedBorrowings.map((item) => {
+          const localItem = saved.find(
+            (b) => b.PeminjamanID === item.PeminjamanID
+          );
+          return localItem && localItem.StatusPeminjaman === "Finished"
+            ? { ...item, ...localItem }
+            : item;
+        });
+
+        //  hitung berapa yang masih aktif 
+        const activeCount = mergedBorrowings.filter(
+          (b) => b.StatusPeminjaman?.toLowerCase() === "borrowed"
+        ).length;
+
+        // update data user
+        setUser({
+          ...resUser.data,
+          ActiveBorrowCount: activeCount,
+          CollectionCount: resCollection.data.length,
+        });
+
+        setCollection(resCollection.data);
+        setFilteredBooks(resCollection.data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch collection data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchCollection();
-  }, []);
+  }, [UserID]);
 
   const handleRemove = async (BukuID) => {
     const confirmRemove = window.confirm(
-      "Apakah kamu yakin ingin menghapus buku dari koleksi?"
+      "Are you sure you want to remove this book from your collection?"
     );
     if (!confirmRemove) return;
 
     try {
       await api.delete("/koleksi/by-user-book", {
-  headers: authHeaders(),
-  data: { UserID, BukuID },
-});
-      setCollection(prev => prev.filter(b => b.BukuID !== BukuID));
-      setFilteredBooks(prev => prev.filter(b => b.BukuID !== BukuID));
-      setUser(prev => ({
+        headers: authHeaders(),
+        data: { UserID, BukuID },
+      });
+
+      setCollection((prev) => prev.filter((b) => b.BukuID !== BukuID));
+      setFilteredBooks((prev) => prev.filter((b) => b.BukuID !== BukuID));
+      setUser((prev) => ({
         ...prev,
-        CollectionCount: (prev.CollectionCount || 1) - 1
+        CollectionCount: (prev.CollectionCount || 1) - 1,
       }));
-      toast.success("📚 Buku berhasil dihapus dari koleksi!");
+
+      toast.success("📚 Book successfully removed from collection!");
     } catch (err) {
       console.error("Remove error:", err.response || err);
-      toast.error("❌ Gagal menghapus buku dari koleksi.");
+      toast.error("❌ Failed to remove book from collection.");
     }
   };
 
-  if (loading) return <p className="text-center mt-6">Loading koleksi...</p>;
+  if (loading) return <p className="text-center mt-6">Loading collection...</p>;
   if (error) return <p className="text-center mt-6 text-red-600">{error}</p>;
   if (collection.length === 0)
     return (
       <div className="flex flex-col items-center justify-center mt-20 text-gray-700">
         <img src="/empty-state.png" alt="No collection" className="w-64 mb-4" />
-        <p className="text-xl font-semibold">Koleksi kosong</p>
+        <p className="text-xl font-semibold">Your collection is empty</p>
         <p className="text-center text-gray-500 mt-2">
-          Tambahkan buku dari halaman katalog untuk membuat koleksimu!
+          Add books from the catalog page to start building your collection!
         </p>
       </div>
     );
@@ -102,12 +124,25 @@ const Collection = () => {
         {/* Count + Search */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           {user && (
-            <div className="flex gap-4 text-white font-semibold">
-              <div className="flex items-center gap-1 bg-[#7B3F00] rounded px-6 py-4">
-                <TbBooks /> <span>{user.ActiveBorrowCount} Active Borrows</span>
+            <div className="flex flex-wrap gap-6 mt-6 mb-8 text-[#7B3F00] font-semibold">
+              <div className="flex items-center gap-3 bg-[#FFF2E0] rounded-2xl shadow-sm border border-[#D29D6A] px-6 py-4 hover:shadow-md transition">
+                <TbBooks className="text-2xl text-[#B67438]" />
+                <div>
+                  <p className="text-sm text-[#5A4A42]">My Active Borrowing</p>
+                  <p className="text-lg font-bold text-[#7B3F00]">
+                    {user.ActiveBorrowCount}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-1 bg-[#7B3F00] rounded px-7 py-4">
-                <TbFolder /> <span>{user.CollectionCount} Collection</span>
+
+              <div className="flex items-center gap-3 bg-[#FFF2E0] rounded-2xl shadow-sm border border-[#D29D6A] px-6 py-4 hover:shadow-md transition">
+                <TbFolder className="text-2xl text-[#B67438]" />
+                <div>
+                  <p className="text-sm text-[#5A4A42]">My Collection</p>
+                  <p className="text-lg font-bold text-[#7B3F00]">
+                    {user.CollectionCount}
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -154,7 +189,8 @@ const Collection = () => {
                           <strong>Publisher:</strong> {data.Penerbit || "-"}
                         </p>
                         <p className="text-xs text-yellow-600 mt-1">
-                          ⭐ {data.RataRataRating
+                          ⭐{" "}
+                          {data.RataRataRating
                             ? Number(data.RataRataRating).toFixed(1)
                             : "0.0"}
                         </p>

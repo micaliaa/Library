@@ -1,23 +1,24 @@
+// Categories.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Hero from "../Hero/heroCategories";
 import { api, authHeaders } from "../../../../src/api";
 import SidebarPeminjam from "../Dashboard/sidebarPeminjam";
-import { TbChecklist, TbBooks, TbFolder } from "react-icons/tb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { CiBookmarkCheck } from "react-icons/ci";
+import SearchBuku from "../Buku/search";
 
+// 🔹 Book Card Component
 const BookCard = ({
   book,
-  handlePinjamBuku,
+  handleBorrowBook,
   handleAddToCollection,
   collection,
   isBorrowing,
   isBorrowed,
 }) => (
-  <div
-    className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0 mb-4 w-full sm:w-[280px] h-[160px] overflow-hidden"
-  >
+  <div className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0 mb-4 w-full sm:w-[300px] h-[160px] overflow-hidden">
     <img
       src={`${api.defaults.baseURL}/${book.Gambar}`}
       alt={book.Judul}
@@ -25,7 +26,9 @@ const BookCard = ({
     />
     <div className="flex flex-col justify-between p-3 flex-1">
       <div>
-        <h3 className="text-base font-bold text-gray-900 truncate">{book.Judul}</h3>
+        <h3 className="text-base font-bold text-gray-900 truncate">
+          {book.Judul}
+        </h3>
         <p className="text-xs text-gray-700 mt-1">
           <strong>Author:</strong> {book.Penulis}
         </p>
@@ -44,7 +47,7 @@ const BookCard = ({
           View
         </Link>
         <button
-          onClick={() => handlePinjamBuku(book.BukuID)}
+          onClick={() => handleBorrowBook(book.BukuID)}
           disabled={isBorrowing || isBorrowed}
           className={`px-3 py-1 text-xs transition ${
             isBorrowed
@@ -65,7 +68,7 @@ const BookCard = ({
               : "bg-[#D29D6A] text-white hover:bg-[#ad6826]"
           }`}
         >
-          {collection.includes(book.BukuID) ? <TbChecklist /> : "+"}
+          {collection.includes(book.BukuID) ? <CiBookmarkCheck /> : "+"}
         </button>
       </div>
     </div>
@@ -75,7 +78,7 @@ const BookCard = ({
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [books, setBooks] = useState([]);
-  const [kategoriRelasi, setKategoriRelasi] = useState([]);
+  const [categoryRelations, setCategoryRelations] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,38 +86,56 @@ const Categories = () => {
   const [borrowed, setBorrowed] = useState([]);
   const [collection, setCollection] = useState([]);
   const [user, setUser] = useState(null);
-  const [search, setSearch] = useState("");
+  const [filteredBooks, setFilteredBooks] = useState([]);
 
+  // 🔹 Fetch all initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
         const UserID = localStorage.getItem("UserID");
-        if (!UserID) throw new Error("User belum login");
+        if (!UserID) throw new Error("User not logged in");
 
-        const [bookRes, categoryRes, relasiRes, userRes, koleksiRes, peminjamanRes] =
-          await Promise.all([
-            api.get("/buku", { headers: authHeaders() }),
-            api.get("/kategori", { headers: authHeaders() }),
-            api.get("/kategoriRelasi", { headers: authHeaders() }),
-            api.get(`/users/${UserID}`, { headers: authHeaders() }),
-            api.get(`/koleksi/user/${UserID}`, { headers: authHeaders() }),
-            api.get(`/peminjaman/user/${UserID}`, { headers: authHeaders() }),
-          ]);
+        const [
+          booksRes,
+          categoriesRes,
+          relationsRes,
+          userRes,
+          collectionRes,
+          borrowRes,
+        ] = await Promise.all([
+          api.get("/buku", { headers: authHeaders() }),
+          api.get("/kategori", { headers: authHeaders() }),
+          api.get("/kategoriRelasi", { headers: authHeaders() }),
+          api.get(`/users/${UserID}`, { headers: authHeaders() }),
+          api.get(`/koleksi/user/${UserID}`, { headers: authHeaders() }),
+          api.get(`/peminjaman/user/${UserID}`, { headers: authHeaders() }),
+        ]);
 
-        setBooks(bookRes.data);
-        setCategories(categoryRes.data);
-        setKategoriRelasi(relasiRes.data);
-        setCollection(koleksiRes.data.map((b) => b.BukuID));
+        // 🧩 Normalize borrow statuses (in English)
+        const borrowData = borrowRes.data.map((item) => ({
+          ...item,
+          StatusPeminjaman: item.StatusPeminjaman?.toLowerCase(),
+        }));
+
+        const activeCount = borrowData.filter(
+          (b) =>
+            b.StatusPeminjaman === "borrowed" ||
+            b.StatusPeminjaman === "dipinjam"
+        ).length;
+
+        setBooks(booksRes.data);
+        setCategories(categoriesRes.data);
+        setCategoryRelations(relationsRes.data);
+        setCollection(collectionRes.data.map((b) => b.BukuID));
         setUser({
           ...userRes.data,
-          ActiveBorrowCount: peminjamanRes.data.filter(
-            (b) => b.StatusPeminjaman === "Dipinjam"
-          ).length,
-          CollectionCount: koleksiRes.data.length,
+          ActiveBorrowCount: activeCount,
+          CollectionCount: collectionRes.data.length,
         });
+        setFilteredBooks(booksRes.data);
       } catch (err) {
         console.error(err);
-        setError("Gagal mengambil data");
+        setError("Failed to fetch data");
       } finally {
         setLoading(false);
       }
@@ -122,47 +143,43 @@ const Categories = () => {
     fetchData();
   }, []);
 
-  // Filter buku sesuai kategori + search (langsung di halaman)
-  const filteredBooks = books.filter((b) => {
-    const inCategory = selectedCategory
-      ? kategoriRelasi.some(
-          (rel) => rel.BukuID === b.BukuID && rel.KategoriID === selectedCategory
-        )
-      : true;
-    const matchesSearch = b.Judul.toLowerCase().includes(search.toLowerCase());
-    return inCategory && matchesSearch;
-  });
+  // 🔹 Update filtered books when category changes
+  useEffect(() => {
+    if (selectedCategory === null) {
+      setFilteredBooks(books);
+    } else {
+      const relatedBookIds = categoryRelations
+        .filter((rel) => rel.KategoriID === selectedCategory)
+        .map((rel) => rel.BukuID);
 
-  // Bikin rows per 3 buku
-  const rows = [];
-  const booksPerRow = 3;
-  for (let i = 0; i < filteredBooks.length; i += booksPerRow) {
-    rows.push(filteredBooks.slice(i, i + booksPerRow));
-  }
+      const filtered = books.filter((book) =>
+        relatedBookIds.includes(book.BukuID)
+      );
 
-  const handlePinjamBuku = async (BukuID) => {
+      setFilteredBooks(filtered);
+    }
+  }, [selectedCategory, books, categoryRelations]);
+
+  // 🔹 Borrow book handler
+  const handleBorrowBook = async (BukuID) => {
     const UserID = localStorage.getItem("UserID");
     if (!UserID) {
-      toast.warning("User belum login! Silakan login terlebih dahulu.");
+      toast.warning("⚠️ Please log in first!");
       return;
     }
+
     const activeCount = user?.ActiveBorrowCount || 0;
     if (activeCount >= 3) {
       toast.error(
-        "❌ Kamu sudah mencapai batas maksimal 3 buku aktif. Kembalikan salah satu buku dulu."
+        "❌ You have reached the maximum limit of 3 active books. Please return one before borrowing again."
       );
       return;
     }
 
     setBorrowingIds((prev) => [...prev, BukuID]);
     try {
-      const response = await api.post("/peminjaman", { UserID, BukuID }, { headers: authHeaders() });
-      const { PeminjamanID, TanggalPengembalian } = response.data;
-      toast.success(
-        `📚 Buku berhasil dipinjam!\nID: ${PeminjamanID}\nTanggal Pengembalian: ${
-          TanggalPengembalian || "Belum ditentukan"
-        }`
-      );
+      await api.post("/peminjaman", { UserID, BukuID }, { headers: authHeaders() });
+      toast.success("📚 Book borrowed successfully!");
       setBorrowed((prev) => [...prev, BukuID]);
       setUser((prev) => ({
         ...prev,
@@ -170,41 +187,40 @@ const Categories = () => {
       }));
     } catch (err) {
       console.error(err);
-      toast.error("Gagal meminjam buku! Silakan coba lagi.");
+      toast.error("Failed to borrow book!");
     } finally {
       setBorrowingIds((prev) => prev.filter((id) => id !== BukuID));
     }
   };
 
+  // 🔹 Add to collection handler
   const handleAddToCollection = async (BukuID) => {
     const UserID = localStorage.getItem("UserID");
     if (!UserID) {
-      toast.warning("User belum login! Silakan login terlebih dahulu.");
+      toast.warning("⚠️ Please log in first!");
       return;
     }
+
     if (collection.includes(BukuID)) {
-      toast.info("Buku sudah ada di koleksi!");
+      toast.info("This book is already in your collection!");
       return;
     }
+
     try {
       await api.post("/koleksi", { UserID, BukuID }, { headers: authHeaders() });
       setCollection((prev) => [...prev, BukuID]);
-      toast.success("📚 Buku berhasil ditambahkan ke koleksi!");
+      toast.success("📚 Book added to collection!");
       setUser((prev) => ({
         ...prev,
         CollectionCount: (prev?.CollectionCount || 0) + 1,
       }));
     } catch (err) {
       console.error(err);
-      toast.error("Gagal menambahkan buku ke koleksi!");
+      toast.error("Failed to add book to collection!");
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    // filteredBooks otomatis sudah pakai search, jadi tidak perlu navigate
-  };
-
+  // 🔹 Render
   if (loading) return <div className="text-center py-8">Loading...</div>;
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
 
@@ -213,41 +229,22 @@ const Categories = () => {
       <SidebarPeminjam className="hidden md:flex" />
       <div className="flex-1 mt-10 px-4">
         <Hero />
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-10">
-      {user && (
-    <div className="flex gap-4 text-white font-semibold">
-      <div className="flex items-center gap-1 bg-[#7B3F00] rounded px-6 py-4">
-        <TbBooks /> <span>{user.ActiveBorrowCount} Active Borrows</span>
-      </div>
-      <div className="flex items-center gap-1 bg-[#7B3F00] rounded px-7 py-4">
-        <TbFolder /> <span>{user.CollectionCount} Collection</span>
-      </div>
-    </div>
-  )}
 
-       <form className="flex flex-col sm:flex-row justify-center gap-2 w-full sm:w-auto">
-    <input
-      type="text"
-      placeholder="Search for books..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="w-full sm:w-[300px] px-5 py-2 rounded-lg border-2 border-[#7B3F00] text-[#7B3F00] focus:outline-none focus:ring-2 focus:ring-[#7B3F00]"
-    />
-        <button
-      type="submit"
-      className="px-4 py-2 bg-[#7B3F00] text-white rounded-lg hover:bg-[#9C5A1F] mt-2 sm:mt-0"
-    >
-      Search
-    </button>
-     </form>
-  </div>
+        {/* SearchBuku */}
+        <SearchBuku booksData={books} setFilteredBooks={setFilteredBooks} />
+
+        {/* Categories */}
         <div className="mb-6">
-          <h3 className="text-xl font-semibold text-[#7B3F00] bg-white mb-2 text-center">Categories</h3>
+          <h3 className="text-xl font-semibold text-[#7B3F00] bg-white mb-2 text-center">
+            Categories
+          </h3>
           <div className="flex gap-2 overflow-x-auto">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`px-4 py-1 rounded-lg border ${
-                selectedCategory === null ? "bg-[#B67438] text-white" : "bg-[#FFF9F3] text-[#7B3F00] border-[#B67438]"
+                selectedCategory === null
+                  ? "bg-[#B67438] text-white"
+                  : "bg-[#FFF9F3] text-[#7B3F00] border-[#B67438]"
               }`}
             >
               All
@@ -257,7 +254,9 @@ const Categories = () => {
                 key={cat.KategoriID}
                 onClick={() => setSelectedCategory(cat.KategoriID)}
                 className={`px-4 py-1 rounded-lg border ${
-                  selectedCategory === cat.KategoriID ? "bg-[#B67438] text-white" : "bg-[#FFF9F3] text-[#7B3F00] border-[#B67438]"
+                  selectedCategory === cat.KategoriID
+                    ? "bg-[#B67438] text-white"
+                    : "bg-[#FFF9F3] text-[#7B3F00] border-[#B67438]"
                 }`}
               >
                 {cat.NamaKategori}
@@ -266,17 +265,22 @@ const Categories = () => {
           </div>
         </div>
 
-        {/* Grid buku dengan border top per baris */}
+        {/* Books */}
         {filteredBooks.length === 0 ? (
           <p className="text-center py-6 text-[#7B3F00] font-semibold">
-            Tidak ada buku yang cocok.
+            No books found.
           </p>
         ) : (
           <div className="space-y-6">
-            {rows.map((row, rowIndex) => (
+            {Array.from(
+              { length: Math.ceil(filteredBooks.length / 3) },
+              (_, i) => filteredBooks.slice(i * 3, i * 3 + 3)
+            ).map((row, rowIndex) => (
               <div
                 key={rowIndex}
-                className={`flex justify-center gap-6 pt-4 ${rowIndex > 0 ? "border-t-10 border-[#B67438]" : ""}`}
+                className={`flex justify-center gap-6 pt-4 ${
+                  rowIndex > 0 ? "border-t-10 border-[#B67438]" : ""
+                }`}
               >
                 {row.map((book) => {
                   const isBorrowing = borrowingIds.includes(book.BukuID);
@@ -285,7 +289,7 @@ const Categories = () => {
                     <BookCard
                       key={book.BukuID}
                       book={book}
-                      handlePinjamBuku={handlePinjamBuku}
+                      handleBorrowBook={handleBorrowBook}
                       handleAddToCollection={handleAddToCollection}
                       collection={collection}
                       isBorrowing={isBorrowing}

@@ -138,7 +138,7 @@ const Buku = () => {
             </div>
 
             <p className="text-gray-700 text-sm leading-relaxed mt-2">
-              Buku ini diterbitkan oleh <strong>{book.Penerbit}</strong> pada tahun{" "}
+              This book was published by <strong>{book.Penerbit}</strong> in the year{" "}
               <strong>{book.TahunTerbit}</strong>.
             </p>
 
@@ -187,7 +187,7 @@ const Buku = () => {
               </div>
             ) : (
               <div className="p-4 text-center bg-gray-50 border rounded-md text-gray-500">
-                📖 Belum ada ulasan untuk buku ini.
+                📖 There are no reviews for this book yet.
               </div>
             )}
           </div>

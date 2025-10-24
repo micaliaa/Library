@@ -46,7 +46,7 @@ const UserDetail = () => {
 
   return (
     <div className='max-w-xl mx-auto mt-24 mb-10 p-6 bg-white dark:bg-[#7B3F00] shadow-md rounded-xl'>
-      <h2 className='text-2xl font-bold text-center mb-6 text-[#7B3F00] dark:text-white'>Detail Pengguna</h2>
+      <h2 className='text-2xl font-bold text-center mb-6 text-[#7B3F00] dark:text-white'>User Details</h2>
 
       <div className='space-y-4 text-[#F5E6D3]'>
         <div className='flex items-center gap-3'>

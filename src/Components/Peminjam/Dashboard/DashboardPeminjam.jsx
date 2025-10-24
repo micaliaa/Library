@@ -8,8 +8,8 @@ import Userdetail from "../User/UserDetail";
 import Hero from "../Hero/hero";
 import Footer from "../../../Components/Peminjam/Footer/footer";
 import { api, authHeaders } from "../../../../src/api";
+import { normalizeStatuses } from "../../utils/translateStatus";
 
-// Komponen kategori tetap sama
 const CategoryDashboard = ({ categories, selectedCategory, onSelect }) => (
   <div className="mt-6">
     <h3 className="text-2xl font-semibold text-white mb-2 bg-[#B67438] px-6 py-2 rounded">Categories</h3>
@@ -61,7 +61,7 @@ const BookCard = ({ book, navigate }) => (
     <p className="text-xs sm:text-sm text-[#5A4A42] line-clamp-1" title={book.Penerbit}>
       Publisher: {book.Penerbit}
     </p>
-    <p className="text-xs sm:text-yellow-600 mt-1">⭐ {book.RataRataRating ? Number(book.RataRataRating).toFixed(1) : "4.5"}</p>
+    <p className="text-xs sm:text-yellow-600 mt-1">⭐{book.RataRataRating ? Number(book.RataRataRating).toFixed(1) : "4.5"}</p>
 
     <button
       className="mt-2 bg-[#D29D6A] text-white px-2 py-1 rounded-lg text-xs sm:text-sm hover:bg-[#B67438]"
@@ -83,48 +83,64 @@ const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const navigate=useNavigate();
+  
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const userID = localStorage.getItem("UserID");
-        if (!token || !userID) return;
+   const fetchData = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const userID = localStorage.getItem("UserID");
+    if (!token || !userID) return;
 
-        const [
-          userRes,
-          bookRes,
-          categoryRes,
-          relasiRes,
-          peminjamanRes,
-          koleksiRes
-        ] = await Promise.all([
-          api.get(`/users/${userID}`, { headers: authHeaders() }),
-          api.get("/buku", { headers: authHeaders() }),
-          api.get("/kategori", { headers: authHeaders() }),
-          api.get("/kategoriRelasi", { headers: authHeaders() }),
-          api.get(`/peminjaman/user/${userID}`, { headers: authHeaders() }),
-          api.get(`/koleksi/user/${userID}`, { headers: authHeaders() }),
-        ]);
+    const [
+      userRes,
+      bookRes,
+      categoryRes,
+      relasiRes,
+      peminjamanRes,
+      koleksiRes
+    ] = await Promise.all([
+      api.get(`/users/${userID}`, { headers: authHeaders() }),
+      api.get("/buku", { headers: authHeaders() }),
+      api.get("/kategori", { headers: authHeaders() }),
+      api.get("/kategoriRelasi", { headers: authHeaders() }),
+      api.get(`/peminjaman/user/${userID}`, { headers: authHeaders() }),
+      api.get(`/koleksi/user/${userID}`, { headers: authHeaders() }),
+    ]);
 
-        setUser({
-          ...userRes.data,
-          ActiveBorrowCount: peminjamanRes.data.filter(b => b.StatusPeminjaman === "Dipinjam").length,
-          CollectionCount: koleksiRes.data.length,
-        });
 
-        setBooks(bookRes.data);
-        setFilterBook(bookRes.data);
-        setCategories(categoryRes.data);
-        setKategoriRelasi(relasiRes.data);
-      } catch (err) {
-        console.error(err);
-        setError("Gagal mengambil data");
-      } finally {
-        setLoading(false);
-      }
-    };
+   const normalizedBorrowings = normalizeStatuses(peminjamanRes.data);
+const saved = JSON.parse(localStorage.getItem("borrowings") || "[]");
+
+const mergedBorrowings = normalizedBorrowings.map(item => {
+  const localItem = saved.find(b => b.PeminjamanID === item.PeminjamanID);
+  return localItem && localItem.StatusPeminjaman === "Finished"
+    ? { ...item, ...localItem }
+    : item;
+});
+    const activeCount = mergedBorrowings.filter(
+      b => b.StatusPeminjaman?.toLowerCase() === "borrowed"
+    ).length;
+
+    setUser({
+      ...userRes.data,
+      ActiveBorrowCount: activeCount,
+      CollectionCount: koleksiRes.data.length,
+    });
+
+    setBooks(bookRes.data);
+    setFilterBook(bookRes.data);
+    setCategories(categoryRes.data);
+    setKategoriRelasi(relasiRes.data);
+  } catch (err) {
+    console.error(err);
+    setError("Gagal mengambil data");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
     fetchData();
   }, []);
@@ -144,12 +160,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (search.trim() !== "") {
-      navigate(`/search/${search}`);
-    }
-  };
+  
 
   return (
     <div className="flex min-h-screen bg-[#FFF9F3] relative">
@@ -162,21 +173,31 @@ const Dashboard = () => {
       )}
 
       <div className="flex-1 p-8 overflow-y-auto">
-        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border border-[#D29D6A] rounded-lg px-4 w-100 focus:outline-none focus:ring-2 focus:ring-[#D29D6A]"
-          />
-          <button
-            type="submit"
-            className="bg-[#B67438] text-white px-4 py-2 rounded-lg hover:bg-[#D29D6A]"
-          >
-            Enter
-          </button>
-        </form>
+      {/* Search bar */}
+<form
+  onSubmit={(e) => {
+    e.preventDefault();
+    if (search.trim() !== "") {
+      navigate(`/search?query=${encodeURIComponent(search)}`);
+    }
+  }}
+  className="flex gap-2 mb-6 justify-start"
+>
+  <input
+    type="text"
+    placeholder="Search..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    className="border border-[#D29D6A] rounded-lg px-4 w-100 focus:outline-none focus:ring-2 focus:ring-[#D29D6A]"
+  />
+  <button
+    type="submit"
+    className="bg-[#B67438] text-white px-4 py-2 rounded-lg hover:bg-[#D29D6A]"
+  >
+    Search
+  </button>
+</form>
+
 
         <div className="mt-3 flex items-center justify-between mb-6 w-full">
           <div
@@ -189,17 +210,28 @@ const Dashboard = () => {
 
         <Hero username={user?.Username || "Guest"} />
 
-        {/* Count Active Borrow & Collection di bawah Hero */}
-        {user && (
-          <div className="flex gap-6 mt-4 mb-6 text-[#7B3F00] font-semibold">
-            <div className="flex items-center gap-1 bg-[#ffecd4] rounded px-6 py-4">
-              <TbBooks /> <span>{user.ActiveBorrowCount} Active Borrows</span>
-            </div>
-            <div className="flex items-center gap-1 bg-[#ffecd4] rounded px-7 py-4">
-              <TbFolder /> <span>{user.CollectionCount} Collection</span>
-            </div>
-          </div>
-        )}
+        
+       {/* Count Active Borrow & Collection */}
+{user && (
+  <div className="flex flex-wrap gap-6 mt-6 mb-8 text-[#7B3F00] font-semibold">
+    <div className="flex items-center gap-3 bg-[#FFF2E0] rounded-2xl shadow-sm border border-[#D29D6A] px-6 py-4 hover:shadow-md transition">
+      <TbBooks className="text-2xl text-[#B67438]" />
+      <div>
+        <p className="text-sm text-[#5A4A42]">My Active Borrowing</p>
+        <p className="text-lg font-bold text-[#7B3F00]">{user.ActiveBorrowCount}</p>
+      </div>
+    </div>
+
+    <div className="flex items-center gap-3 bg-[#FFF2E0] rounded-2xl shadow-sm border border-[#D29D6A] px-6 py-4 hover:shadow-md transition">
+      <TbFolder className="text-2xl text-[#B67438]" />
+      <div>
+        <p className="text-sm text-[#5A4A42]">My Collection</p>
+        <p className="text-lg font-bold text-[#7B3F00]">{user.CollectionCount}</p>
+      </div>
+    </div>
+  </div>
+)}
+
 
         <section className="mb-10">
           <h3 className="text-2xl font-semibold text-white mb-2 bg-[#B67438] px-6 py-2 rounded">

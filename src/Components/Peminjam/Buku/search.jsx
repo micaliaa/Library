@@ -1,4 +1,3 @@
-// SearchBuku.js
 import React, { useState } from "react";
 
 const SearchBuku = ({ booksData, setFilteredBooks }) => {
@@ -24,13 +23,14 @@ const SearchBuku = ({ booksData, setFilteredBooks }) => {
     const value = e.target.value;
     setSearch(value);
 
+    // jika input dikosongkan, kembalikan semua buku
     if (value === "") {
       setFilteredBooks(booksData);
     }
   };
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+    <div className="flex flex-col sm:flex-row justify-end items-center gap-2 mb-6">
       <form onSubmit={handleSearch} className="flex w-full sm:w-auto gap-2">
         <input
           type="text"
