@@ -1,4 +1,4 @@
-// Fungsi untuk menerjemahkan status peminjaman dari Indo <-> English
+
 export const translateStatus = (status, to = "en") => {
   if (!status) return "";
 

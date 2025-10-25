@@ -8,7 +8,7 @@ import { FiClock } from "react-icons/fi";
 
 const SidebarPeminjam = () =>{
     return(
-    <div className='flex min-h-screen bg-[#FFF9F3] '>
+    
      <aside className='w-64 bg-[#7B3F00] text-[#F5E6D3] flex flex-col p-6 '>
 
          <div className='flex items-center space-x-0'>
@@ -33,7 +33,7 @@ const SidebarPeminjam = () =>{
               </div>
 
      </aside>
-     </div>
+ 
     ) }
 
     export default SidebarPeminjam;

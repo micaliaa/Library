@@ -1,4 +1,4 @@
-// Book.jsx
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Hero2 from "../../../Components/Peminjam/Hero/heroBooks";
@@ -68,7 +68,7 @@ const Book = () => {
     fetchBooksAndUser();
   }, []);
 
-  // Helper untuk format tanggal YYYY-MM-DD
+
   // helper format date
 const formatDate = (date) => {
   const d = new Date(date);

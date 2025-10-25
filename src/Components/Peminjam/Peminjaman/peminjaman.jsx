@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom"; // 
 import SidebarPeminjam from "../Dashboard/sidebarPeminjam";
 import { api, authHeaders } from "../../../../src/api";
 import Hero3 from "../../../Components/Peminjam/Hero/heroPeminjaman";
@@ -51,7 +52,7 @@ const MyBorrowings = () => {
     fetchBorrowings();
   }, [userID]);
 
-  // 🟢 Tambahan: efek untuk munculkan warning otomatis
+  // Efek untuk munculkan warning otomatis
   useEffect(() => {
     if (borrowings.length === 0) return;
 
@@ -71,7 +72,7 @@ const MyBorrowings = () => {
         toast.info(`📚 "${b.buku?.Judul}" is due in ${diff} day(s)!`, { position: "top-center" });
       }
     });
-  }, [borrowings]); // 🟢 efek baru
+  }, [borrowings]);
 
   // Fungsi kembalikan buku
   const handleReturn = async (peminjamanID, bukuID) => {
@@ -221,83 +222,75 @@ const MyBorrowings = () => {
                 const book = item.buku || {};
                 const alreadyReturned = !!item.pengembalian;
                 const returnedDate = item.pengembalian?.TanggalPengembalian;
-                const status = item.StatusPeminjaman || "Borrowed";
-                const countdown = getCountdown(
-                  item.TanggalPengembalian,
-                  status
-                );
+
+                // Set status otomatis
+                const status =
+                  item.StatusPeminjaman === "Borrowed" &&
+                  new Date(item.TanggalPengembalian) < new Date()
+                    ? "Late"
+                    : item.StatusPeminjaman || "Borrowed";
+
+                const countdown = getCountdown(item.TanggalPengembalian, status);
 
                 let statusColor = "bg-blue-100 text-blue-800";
                 if (status === "Late") statusColor = "bg-red-100 text-red-800";
-                if (status === "Finished")
-                  statusColor = "bg-green-100 text-green-800";
+                if (status === "Finished") statusColor = "bg-green-100 text-green-800";
 
                 return (
                   <div
                     key={item.PeminjamanID}
-                    //  Tambahan: ubah warna background berdasarkan countdown
-                    className={`flex border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0 overflow-hidden ${
-                      countdown?.includes("late")
-                        ? "bg-red-100"
-                        : countdown?.includes("Last day")
-                        ? "bg-yellow-100"
-                        : "bg-white"
-                    }`}
-                    style={{ width: "300px", height: "200px" }}
+                    className="flex flex-col w-[300px] h-[200px] border border-[#B67438] shadow-md hover:shadow-lg"
                   >
-                    <img
-                      src={
-                        book.Gambar
-                          ? `${API_URL}/${book.Gambar}`
-                          : "/placeholder.png"
-                      }
-                      alt={book.Judul || "No Title"}
-                      className="w-[110px] h-full object-cover"
-                    />
-                    <div className="flex flex-col justify-between p-3 flex-1">
-                      <div>
-                        <h3 className="text-base font-bold text-gray-900 truncate">
-                          {book.Judul || "Untitled"}
-                        </h3>
-                        <p className="text-xs text-gray-700 mt-1">
-                          <strong>Author:</strong> {book.Penulis || "-"}
-                        </p>
-                        <p className="text-xs text-gray-700">
-                          <strong>Publisher:</strong> {book.Penerbit || "-"}
-                        </p>
-                        <p
-                          className={`text-xs mt-1 px-2 py-[2px] rounded-full inline-block ${statusColor}`}
-                        >
-                          {status}
-                        </p>
-                      </div>
-                      <div className="text-[10px] text-gray-600 mt-1">
-                        <p>
-                          <strong>Borrowing:</strong>{" "}
-                          {new Date(
-                            item.TanggalPeminjaman
-                          ).toLocaleDateString()}
-                        </p>
-                        <p>
-                          <strong>Return Limit:</strong>{" "}
-                          {item.TanggalPengembalian
-                            ? new Date(
-                                item.TanggalPengembalian
-                              ).toLocaleDateString()
-                            : "-"}
-                        </p>
-                        {countdown && (
-                          <p className="text-[10px] text-yellow-700 font-semibold">
-                            ⏳ {countdown}
+                    {/* Konten buku */}
+                    <Link to={`/detail/${book.BukuID}`} className="flex flex-1 overflow-hidden">
+                      <img
+                        src={book.Gambar ? `${API_URL}/${book.Gambar}` : "/placeholder.png"}
+                        alt={book.Judul || "No Title"}
+                        className="w-[110px] h-full object-cover"
+                      />
+                      <div className="flex flex-col justify-between p-3 flex-1">
+                        <div>
+                          <h3 className="text-base font-bold text-gray-900 truncate">
+                            {book.Judul || "Untitled"}
+                          </h3>
+                          <p className="text-xs text-gray-700 mt-1">
+                            <strong>Author:</strong> {book.Penulis || "-"}
                           </p>
-                        )}
-                        {alreadyReturned && (
+                          <p className="text-xs text-gray-700">
+                            <strong>Publisher:</strong> {book.Penerbit || "-"}
+                          </p>
+                          <p
+                            className={`text-xs mt-1 px-2 py-[2px] rounded-full inline-block ${statusColor}`}
+                          >
+                            {status}
+                          </p>
+                        </div>
+                        <div className="text-[10px] text-gray-600 mt-1">
                           <p>
-                            <strong>Returned:</strong>{" "}
-                            {new Date(returnedDate).toLocaleDateString()}
+                            <strong>Borrowing:</strong>{" "}
+                            {new Date(item.TanggalPeminjaman).toLocaleDateString()}
                           </p>
-                        )}
-                      </div>
+                          <p>
+                            <strong>Return Limit:</strong>{" "}
+                            {item.TanggalPengembalian
+                              ? new Date(item.TanggalPengembalian).toLocaleDateString()
+                              : "-"}
+                          </p>
+                          {countdown && (
+                            <p className="text-[10px] text-yellow-700 font-semibold">
+                              ⏳ {countdown}
+                            </p>
+                          )}
+                          {alreadyReturned && (
+                            <p>
+                              <strong>Returned:</strong>{" "}
+                              {new Date(returnedDate).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        </div>
+                      </Link>
+
                       {!alreadyReturned && status === "Borrowed" && (
                         <button
                           onClick={() =>
@@ -308,8 +301,7 @@ const MyBorrowings = () => {
                           Return
                         </button>
                       )}
-                    </div>
-                  </div>
+                      </div>
                 );
               })}
             </motion.div>
