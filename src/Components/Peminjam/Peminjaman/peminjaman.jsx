@@ -8,6 +8,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { motion } from "framer-motion";
 import SearchBuku from "../Buku/search";
 import { normalizeStatuses } from "../../../../src/Components/utils/translateStatus";
+import Swal from "sweetalert2";
+
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -75,12 +77,38 @@ const MyBorrowings = () => {
   }, [borrowings]);
 
   // Fungsi kembalikan buku
+  
   const handleReturn = async (peminjamanID, bukuID) => {
-    const confirmReturn = window.confirm(
-      "Are you sure you want to return this book?"
-    );
-    if (!confirmReturn) return;
+    console.log("RETURN DATA:", { 
+  peminjamanID, 
+  bukuID, 
+  userID 
+});
+    const Toast = Swal.mixin({
+        toast: true,
+        position: "top-center",
+        showConfirmButton: true,
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+        cancelButtonText: "No",
+        confirmButtonColor: "#7B3F00",
+        cancelButtonColor: "#d3bfa6",
+        background: "#FFF9F3",
+        color: "#3B2F2F",
+        width: "320px",
+        customClass: {
+          popup: "rounded-xl shadow-lg border border-[#d3bfa6]",
+        },
+      });
+    
+        const result = await Toast.fire({
+        title: "Return this book?",
+        text: "Are you sure you want to return this book now?",
+        icon: "warning",
+      });
+    
 
+if (!result.isConfirmed) return;
     try {
       await api.post(
         `/pengembalian`,
@@ -205,7 +233,7 @@ const MyBorrowings = () => {
         </div>
 
         {/* List buku */}
-        <div className="flex flex-col gap-8 border-t-8 border-[#B67438] pt-4">
+        <div className="flex flex-col gap-8 border-t-8 border-[#B67438]  pt-4">
           {visibleRows.map((row, rowIndex) => (
             <motion.div
               key={rowIndex}
@@ -242,7 +270,7 @@ const MyBorrowings = () => {
                     className="flex flex-col w-[300px] h-[200px] border border-[#B67438] shadow-md hover:shadow-lg"
                   >
                     {/* Konten buku */}
-                    <Link to={`/detail/${book.BukuID}`} className="flex flex-1 overflow-hidden">
+                    <Link to={`/detail/${book.BukuID}`} className="flex flex-1 overflow-hidden bg-white">
                       <img
                         src={book.Gambar ? `${API_URL}/${book.Gambar}` : "/placeholder.png"}
                         alt={book.Judul || "No Title"}

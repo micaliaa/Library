@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api, authHeaders } from "../../../../src/api";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Buku = () => {
   const { id } = useParams();
@@ -34,47 +36,62 @@ const Buku = () => {
       </span>
     ));
 
-  //handlePinjamBuku
+  // handlePinjamBuku
   const handlePinjamBuku = async () => {
-    if (!userID) return alert("You must log in first!");
-    setIsBorrowing(true);
+  if (!userID) return toast.error("You must log in first!");
+  setIsBorrowing(true);
 
-    // helper format tanggal
-    const formatDate = (date) => {
-      const d = new Date(date);
-      const month = "" + (d.getMonth() + 1);
-      const day = "" + d.getDate();
-      const year = d.getFullYear();
-      return [year, month.padStart(2, "0"), day.padStart(2, "0")].join("-");
-    };
-
-    const today = new Date();
-    const sevenDaysLater = new Date();
-    sevenDaysLater.setDate(today.getDate() + 7);
-
-    try {
-      await api.post(
-        "/peminjaman",
-        {
-          UserID: userID,
-          BukuID: book.BukuID,
-          TanggalPeminjaman: formatDate(today),
-          TanggalPengembalian: formatDate(sevenDaysLater),
-          StatusPeminjaman: "Dipinjam",
-        },
-        { headers: authHeaders() }
-      );
-      alert("Book borrowed successfully!");
-    } catch (err) {
-      console.error(err.response?.data || err.message);
-      alert("Failed to borrow book!");
-    } finally {
-      setIsBorrowing(false);
-    }
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const month = "" + (d.getMonth() + 1);
+    const day = "" + d.getDate();
+    const year = d.getFullYear();
+    return [year, month.padStart(2, "0"), day.padStart(2, "0")].join("-");
   };
 
+  const today = new Date();
+  const sevenDaysLater = new Date();
+  sevenDaysLater.setDate(today.getDate() + 7);
+
+  try {
+    // 🧠 Tambahan: cek dulu jumlah buku yang sedang dipinjam user
+    const res = await api.get(`/peminjaman/user/${userID}`, { headers: authHeaders() });
+    const activeBorrowings = res.data.filter(
+      (item) => item.StatusPeminjaman === "Dipinjam"
+    ).length;
+
+    if (activeBorrowings >= 3) {
+      toast.warn("You have reached the borrowing limit (3 books).");
+      setIsBorrowing(false);
+      return;
+    }
+
+    // kalau belum 3, baru lanjut pinjam
+    await api.post(
+      "/peminjaman",
+      {
+        UserID: userID,
+        BukuID: book.BukuID,
+        TanggalPeminjaman: formatDate(today),
+        TanggalPengembalian: formatDate(sevenDaysLater),
+        StatusPeminjaman: "Dipinjam",
+      },
+      { headers: authHeaders() }
+    );
+
+    toast.success("Book borrowed successfully!");
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    toast.error("Failed to borrow book!");
+  } finally {
+    setIsBorrowing(false);
+  }
+};
+
+
   const handleAddReview = async () => {
-    if (!newReview.trim() || rating === 0) return alert("Please add a review and rating!");
+    if (!newReview.trim() || rating === 0)
+      return toast.warn("Please add a review and rating!");
     try {
       await api.post(
         "/ulasan",
@@ -83,8 +100,11 @@ const Buku = () => {
       );
       setNewReview("");
       setRating(0);
-      fetchBook(); // refresh reviews
-    } catch {}
+      fetchBook();
+      toast.success("Review added!");
+    } catch {
+      toast.error("Failed to add review!");
+    }
   };
 
   const handleEditReview = (review) => {
@@ -104,7 +124,10 @@ const Buku = () => {
       setNewReview("");
       setRating(0);
       fetchBook();
-    } catch {}
+      toast.success("Review updated!");
+    } catch {
+      toast.error("Failed to update review!");
+    }
   };
 
   const handleDeleteReview = async (ulasanID) => {
@@ -112,7 +135,10 @@ const Buku = () => {
     try {
       await api.delete(`/ulasan/${ulasanID}`, { headers: authHeaders() });
       fetchBook();
-    } catch {}
+      toast.success("Review deleted!");
+    } catch {
+      toast.error("Failed to delete review!");
+    }
   };
 
   if (error) return <p className="text-red-600">{error}</p>;
@@ -122,6 +148,8 @@ const Buku = () => {
 
   return (
     <div className="bg-[#FFF9F3] min-h-screen text-[#3B2F2F]">
+      <ToastContainer position="top-center" autoClose={2500} hideProgressBar />
+
       {/* Header */}
       <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
         <button onClick={() => navigate("/dashboard")} className="text-[#7B3F00] hover:underline">
@@ -188,13 +216,13 @@ const Buku = () => {
                     <div className="flex gap-2 text-sm">
                       <button
                         onClick={() => handleEditReview(review)}
-                        className="text-blue-600 hover:underline"
+                        className="text-white hover:underline rounded px-1 py-1 bg-[#7B3F00]"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteReview(review.UlasanID)}
-                        className="text-red-600 hover:underline"
+                        className="text-white rounded px-1 py-1 hover:underline bg-red-600"
                       >
                         Delete
                       </button>

@@ -8,7 +8,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SearchBuku from "../Buku/search";
 import { normalizeStatuses } from "../../../../src/Components/utils/translateStatus";
-
+import Swal from "sweetalert2";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Collection = () => {
@@ -34,7 +34,7 @@ const Collection = () => {
        
         const normalizedBorrowings = normalizeStatuses(resBorrow.data, "en");
 
-        //  merge dengan localStorage biar data "Finished" tetap sinkron
+       
         const saved = JSON.parse(localStorage.getItem("borrowings") || "[]");
         const mergedBorrowings = normalizedBorrowings.map((item) => {
           const localItem = saved.find(
@@ -69,32 +69,80 @@ const Collection = () => {
 
     fetchCollection();
   }, [UserID]);
+const handleRemove = async (BukuID) => {
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-center",
+    showConfirmButton: true,
+    showCancelButton: true,
+    confirmButtonText: "Yes",
+    cancelButtonText: "No",
+    confirmButtonColor: "#7B3F00",
+    cancelButtonColor: "#d3bfa6",
+    background: "#FFF9F3",
+    color: "#3B2F2F",
+    width: "320px",
+    customClass: {
+      popup: "rounded-xl shadow-lg border border-[#d3bfa6]",
+    },
+  });
 
-  const handleRemove = async (BukuID) => {
-    const confirmRemove = window.confirm(
-      "Are you sure you want to remove this book from your collection?"
-    );
-    if (!confirmRemove) return;
+    const result = await Toast.fire({
+    title: "Remove this book?",
+    text: "Are you sure you want to remove it from your collection?",
+    icon: "warning",
+  });
 
-    try {
-      await api.delete("/koleksi/by-user-book", {
+
+  if (!result.isConfirmed) return;
+  try {
+    setLoading(true); // 
+   
+    await api.delete("/koleksi/by-user-book", {
+      headers: authHeaders(),
+      data: { UserID, BukuID },
+    });
+
+    toast.success("📚 Book successfully removed from collection!");
+
+    
+    const resCollection = await api.get(`/koleksi/user/${UserID}`, {
+      headers: authHeaders(),
+    });
+
+
+    setCollection(resCollection.data);
+    setFilteredBooks(resCollection.data);
+
+ 
+    setUser((prev) => ({
+      ...prev,
+      CollectionCount: resCollection.data.length,
+    }));
+  } catch (err) {
+    console.error("Remove error:", err.response || err);
+
+    if (err.response?.status === 404) {
+      toast.info("📖 Book was already removed from your collection.");
+      // tetap sync ulang supaya tampilan update
+      const resCollection = await api.get(`/koleksi/user/${UserID}`, {
         headers: authHeaders(),
-        data: { UserID, BukuID },
       });
-
-      setCollection((prev) => prev.filter((b) => b.BukuID !== BukuID));
-      setFilteredBooks((prev) => prev.filter((b) => b.BukuID !== BukuID));
+      setCollection(resCollection.data);
+      setFilteredBooks(resCollection.data);
       setUser((prev) => ({
         ...prev,
-        CollectionCount: (prev.CollectionCount || 1) - 1,
+        CollectionCount: resCollection.data.length,
       }));
-
-      toast.success("📚 Book successfully removed from collection!");
-    } catch (err) {
-      console.error("Remove error:", err.response || err);
+    } else {
       toast.error("❌ Failed to remove book from collection.");
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   if (loading) return <p className="text-center mt-6">Loading collection...</p>;
   if (error) return <p className="text-center mt-6 text-red-600">{error}</p>;
@@ -217,7 +265,7 @@ const Collection = () => {
           ))}
         </div>
 
-        <ToastContainer position="top-right" autoClose={2500} hideProgressBar />
+        <ToastContainer />
       </div>
     </div>
   );

@@ -32,11 +32,16 @@ const Login = () => {
       setSucces("Login Berhasil.");
 
       // navigasi sesuai role
-      if (Role === "Peminjam") {
-        navigate("/dashboard");
-      } else {
-        setError("Role Tidak Dikenali");  
-      }
+     if (Role === "Peminjam") {
+  navigate("/dashboard");
+} else if (Role === "Petugas") {
+  navigate("/petugas/dashboard");
+} else if (Role === "Administrator") {
+  navigate("/admin/dashboard");
+} else {
+  setError("Role Tidak Dikenali");
+}
+
     } catch (err) {
       setError(err.response?.data?.message || "Login gagal. Coba lagi");
     }

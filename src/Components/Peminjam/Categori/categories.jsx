@@ -1,4 +1,4 @@
-// Categories.jsx
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Hero from "../Hero/heroCategories";
@@ -9,7 +9,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { CiBookmarkCheck } from "react-icons/ci";
 import SearchBuku from "../Buku/search";
 
-// 🔹 Book Card Component
 const BookCard = ({
   book,
   handleBorrowBook,
@@ -88,7 +87,7 @@ const Categories = () => {
   const [user, setUser] = useState(null);
   const [filteredBooks, setFilteredBooks] = useState([]);
 
-  // 🔹 Fetch all initial data
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -111,7 +110,7 @@ const Categories = () => {
           api.get(`/peminjaman/user/${UserID}`, { headers: authHeaders() }),
         ]);
 
-        // 🧩 Normalize borrow statuses (in English)
+        
         const borrowData = borrowRes.data.map((item) => ({
           ...item,
           StatusPeminjaman: item.StatusPeminjaman?.toLowerCase(),
@@ -143,7 +142,7 @@ const Categories = () => {
     fetchData();
   }, []);
 
-  // 🔹 Update filtered books when category changes
+
   useEffect(() => {
     if (selectedCategory === null) {
       setFilteredBooks(books);
@@ -160,7 +159,7 @@ const Categories = () => {
     }
   }, [selectedCategory, books, categoryRelations]);
 
-  // 🔹 Borrow book handler
+
   const handleBorrowBook = async (BukuID) => {
     const UserID = localStorage.getItem("UserID");
     if (!UserID) {
@@ -193,7 +192,7 @@ const Categories = () => {
     }
   };
 
-  // 🔹 Add to collection handler
+
   const handleAddToCollection = async (BukuID) => {
     const UserID = localStorage.getItem("UserID");
     if (!UserID) {
@@ -220,10 +219,13 @@ const Categories = () => {
     }
   };
 
-  // 🔹 Render
+  
+
   if (loading) return <div className="text-center py-8">Loading...</div>;
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
 
+
+  
   return (
     <div className="min-h-screen bg-[#F5E6D3] text-white flex flex-col md:flex-row">
       <SidebarPeminjam className="hidden md:flex" />
