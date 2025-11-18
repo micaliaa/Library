@@ -37,7 +37,7 @@ const KoleksiPribadi=sequelize.define('koleksipribadi',{
 KoleksiPribadi.belongsTo(User,{foreignKey:"UserID",onDelete:"CASCADE"});
 User.hasMany(KoleksiPribadi,{foreignKey:"UserID",onDelete:"CASCADE"});
 
-KoleksiPribadi.belongsTo(Buku, {foreignKey:"BukuID"});
+KoleksiPribadi.belongsTo(Buku, {foreignKey:"BukuID",as:"buku"});
 Buku.hasMany(KoleksiPribadi,{foreignKey:"BukuID"});
 
 module.exports = KoleksiPribadi;

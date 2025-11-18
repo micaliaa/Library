@@ -60,44 +60,103 @@ class UserController {
         }
     }
 
-    async createUser(req, res) {
-        try {
-            const { Username, Password, Email, NamaLengkap, Alamat, Role } = req.body;
+    
+   async getAllBorrowers(req, res) {
+  try {
+    const users = await userRepository.findAllWithActiveLoans();
+    res.status(200).json(users);
+  } catch (err) {
+    console.error("ERROR getAllBorrowers:", err);
+    res.status(500).json({ message: err.message });
+  }
+}
 
-            if (!Username || !Password || !Email || !NamaLengkap || !Alamat) {
-                return res.status(400).json({ message: "Semua field harus diisi" });
-            }
 
-            // Validasi role
-            const validRoles = ['Administrator', 'Peminjam', 'Petugas'];
-            if (!validRoles.includes(Role)) {
-                return res.status(400).json({ message: "Role tidak valid" });
-            }
+   async createUser(req, res) {
+  try {
+    const {
+      Username = null,
+      Password = null,
+      Email,
+      NamaLengkap,
+      Alamat = null,
+      Role
+    } = req.body;
 
-            // Cek email duplikat
-            const existingUser = await userRepository.findByEmail(Email);
-            if (existingUser) return res.status(400).json({ message: 'Email sudah terdaftar' });
+    const creatorRole = req.user?.Role; // role dari pembuat (hasil decode JWT)
 
-            // Hash password
-            const hashed = await hashPassword(Password);
-
-            const newUser = await userRepository.create({
-                Username,
-                Password: hashed,
-                Email,
-                NamaLengkap,
-                Alamat,
-                Role,
-            });
-
-            res.status(201).json({
-                message: 'User created successfully',
-                user: newUser,
-            });
-        } catch (err) {
-            res.status(500).json({ message: err.message });
-        }
+    // Validasi field wajib
+    if (!Email || !NamaLengkap || !Role) {
+      return res.status(400).json({ message: "Semua field harus diisi" });
     }
+
+    // Validasi role
+    const validRoles = ['Administrator', 'Peminjam', 'Petugas'];
+    if (!validRoles.includes(Role)) {
+      return res.status(400).json({ message: "Role tidak valid" });
+    }
+
+    // Cek email duplikat
+    const existingUser = await userRepository.findByEmail(Email);
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email sudah terdaftar' });
+    }
+
+    let plainPassword = Password;
+    let hashedPassword;
+
+    // 🔐 Logika password berdasarkan role & siapa yang buat
+    if (Role === 'Peminjam') {
+      if (!Password && creatorRole !== 'Administrator') {
+        // Kalau peminjam daftar sendiri → wajib isi password
+        return res.status(400).json({ message: "Password wajib untuk peminjam" });
+      }
+      // Kalau dibuat oleh admin → auto generate password
+      plainPassword = Password || Math.random().toString(36).slice(-8);
+      hashedPassword = await hashPassword(plainPassword);
+    } else {
+      // Untuk Petugas / Admin → password bisa kosong (generate otomatis)
+      plainPassword = Password || Math.random().toString(36).slice(-8);
+      hashedPassword = await hashPassword(plainPassword);
+    }
+
+    // Simpan user baru
+    const newUser = await userRepository.create({
+      Username,
+      Password: hashedPassword,
+      Email,
+      NamaLengkap,
+      Alamat,
+      Role,
+    });
+
+    // Hindari kirim password hash ke client
+    const userResponse = {
+      id: newUser.id,
+      Username: newUser.Username,
+      Email: newUser.Email,
+      NamaLengkap: newUser.NamaLengkap,
+      Alamat: newUser.Alamat,
+      Role: newUser.Role,
+    };
+
+    // Kembalikan password plaintext hanya kalau dibuat oleh admin
+    const response = {
+      message: 'User created successfully',
+      user: userResponse,
+    };
+
+    if (creatorRole === 'Administrator') {
+      response.temporaryPassword = plainPassword;
+    }
+
+    res.status(201).json(response);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
 
     async updateUser(req, res) {
         try {

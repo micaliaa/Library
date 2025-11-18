@@ -13,9 +13,16 @@ const sequelize = new Sequelize(
   }
 );
 
-
 sequelize.authenticate()
-  .then(() => console.log("Database connected..."))
+  .then(() => {
+    console.log("Database connected...");
+
+    // ✅ Tambahkan ini sementara untuk update schema
+    return sequelize.sync({ alter: true });
+  })
+  .then(() => {
+    console.log("Database synchronized...");
+  })
   .catch(err => console.error("Error connecting to database:", err));
 
 module.exports = sequelize;

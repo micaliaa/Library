@@ -45,7 +45,7 @@ class UlasanController{
         }
     }
 
-    async updateUlasan(req,rqs){
+    async updateUlasan(req,res){
         try{
             const updatedUlasan=await ulasanRepository.update(req.params.id,req.body)
             if(!updatedUlasan)return res.status(404).json({message:'ulasan not found'})
@@ -54,15 +54,18 @@ class UlasanController{
             res.status(500).json({message:err.message});
         }
     }
-    async deleteUlasan(req,rqs){
-        try{
-            const deletedUlasan=await ulasanRepository.update(req.params.id)
-            if(!deletedUlasan)return res.status(404).json({message:'ulasan not found'})
-                res.json({message:'ulasan deleted succesfully'})
-        }catch(err){
-            res.status(500).json({message:err.message});
-        }
+   async deleteUlasan(req, res) {
+  try {
+    const deletedUlasan = await ulasanRepository.delete(req.params.id);
+    if (!deletedUlasan) {
+      return res.status(404).json({ message: 'Ulasan not found' });
     }
-    
+    res.json({ message: 'Ulasan deleted successfully' });
+  } catch (err) {
+    console.error("Error deleting ulasan:", err);
+    res.status(500).json({ message: err.message });
+  }
+}
+
 }
 module.exports=new UlasanController();

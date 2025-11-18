@@ -34,10 +34,10 @@ const KategoriBukuRelasi = sequelize.define(
   }
 );
 
-KategoriBukuRelasi.belongsTo(Buku, { foreignKey: "BukuID" });
-Buku.hasMany(KategoriBukuRelasi, { foreignKey: "BukuID" });
+KategoriBukuRelasi.belongsTo(Buku, { foreignKey: "BukuID",onDelete: "CASCADE" });
+Buku.hasMany(KategoriBukuRelasi, { foreignKey: "BukuID",onDelete: "CASCADE" });
 
-KategoriBukuRelasi.belongsTo(KategoriBuku, { foreignKey: "KategoriID" });
-KategoriBuku.hasMany(KategoriBukuRelasi, { foreignKey: "KategoriID" });
+KategoriBukuRelasi.belongsTo(KategoriBuku, { foreignKey: "KategoriID",onDelete: "CASCADE" });
+KategoriBuku.hasMany(KategoriBukuRelasi, { foreignKey: "KategoriID",onDelete: "CASCADE" });
 
 module.exports = KategoriBukuRelasi;

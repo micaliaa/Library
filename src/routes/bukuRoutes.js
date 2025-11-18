@@ -14,7 +14,7 @@ router.post('/',authMiddleware(['Administrator']),upload.single('Gambar'),bukuCo
 router.get('/',authMiddleware(['Administrator','Petugas','Peminjam']),bukuController.getAllBooks,);
 router.get('/allbuku',authMiddleware(['Administrator','Petugas']),bukuController.getCountBuku);
 router.get('/:BukuID',authMiddleware(['Administrator','Petugas','Peminjam']),bukuController.getBookById);
-router.put('/:BukuID',authMiddleware(['Administrator']),upload.single('Gambar'),bukuController.updateBook);
-router.delete('/:BukuID',authMiddleware(['Administrator']),bukuController.deleteBook);
+router.put('/:BukuID',authMiddleware(['Administrator','Petugas']),upload.single('Gambar'),bukuController.updateBook);
+router.delete('/:BukuID',authMiddleware(['Administrator','Petugas']),bukuController.deleteBook);
 
 module.exports=router;

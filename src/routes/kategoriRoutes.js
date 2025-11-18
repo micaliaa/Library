@@ -8,8 +8,8 @@ router.get('/',authMiddleware(['Administrator', 'Petugas', 'Peminjam']),kategori
 router.get('/:id',authMiddleware(['Administrator', 'Petugas', 'Peminjam']),kategoriController.getKategoriById);
 
 
-router.post('/', authMiddleware(['Administrator']),kategoriController.createKategori);
-router.put('/:id', authMiddleware(['Administrator']),kategoriController.updateKategori);
-router.delete('/:id', authMiddleware(['Administrator']),kategoriController.deleteKategori);
+router.post('/', authMiddleware(['Administrator','Petugas']),kategoriController.createKategori);
+router.put('/:id', authMiddleware(['Administrator','Petugas']),kategoriController.updateKategori);
+router.delete('/:id', authMiddleware(['Administrator','Petugas']),kategoriController.deleteKategori);
 
 module.exports= router;

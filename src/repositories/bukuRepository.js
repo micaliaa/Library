@@ -1,29 +1,26 @@
 const { Op, fn, col } = require("sequelize");
-const sequelize = require("../config/databaseConfig");
 const Buku = require("../models/Buku");
 const UlasanBuku = require("../models/UlasanBuku");
 const User = require("../models/User");
+const KategoriRelasi = require("../models/KategoriBukuRelasi");
+const Peminjaman = require("../models/Peminjaman"); // import dengan require
+const KoleksiPribadi = require ('../models/KoleksiPribadi');
 
 class BukuRepository {
   async findAll() {
-    try {
-      return await Buku.findAll({
-        include: [
-          {
-            model: UlasanBuku,
-            as: "Ulasan",
-            attributes: [],
-          },
-        ],
-        attributes: {
-          include: [[fn("AVG", col("Ulasan.Rating")), "RataRataRating"]],
+    return await Buku.findAll({
+      include: [
+        {
+          model: UlasanBuku,
+          as: "Ulasan",
+          attributes: [],
         },
-        group: ["buku.BukuID"], // ✅ pakai alias model, bukan col()
-      });
-    } catch (err) {
-      console.error("🔥 ERROR di findAll BukuRepository:", err);
-      throw err;
-    }
+      ],
+      attributes: {
+        include: [[fn("AVG", col("Ulasan.Rating")), "RataRataRating"]],
+      },
+      group: ["buku.BukuID"],
+    });
   }
 
   async findLimitFive() {
@@ -68,11 +65,32 @@ class BukuRepository {
   async delete(BukuID) {
     const buku = await Buku.findByPk(BukuID);
     if (!buku) return null;
+
+     await UlasanBuku.destroy({ where: { BukuID } });
+
+   
+    await Peminjaman.destroy({ where: { BukuID } });
+
+    await KoleksiPribadi.destroy({ where: { BukuID } });
+
+   
+    await KategoriRelasi.destroy({ where: { BukuID } });
+
+
     await buku.destroy();
+
     return buku;
   }
 
-  // 🔍 Fungsi search
+  async deleteKategoriRelasi(BukuID) {
+    return await KategoriRelasi.destroy({ where: { BukuID } });
+  }
+
+  async addKategoriRelasi(BukuID, KategoriIDs) {
+    const data = KategoriIDs.map(id => ({ BukuID, KategoriID: id }));
+    return await KategoriRelasi.bulkCreate(data);
+  }
+
   async search(keyword) {
     return await Buku.findAll({
       where: {

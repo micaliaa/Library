@@ -1,67 +1,69 @@
-const { DATE } = require('sequelize');
-const pengembalianRepository=require('../repositories/pengembalianRepository');
+const pengembalianRepository = require('../repositories/pengembalianRepository');
+
+class PengembalianController {
+  getAllPengembalian = async (req, res) => {
+    try {
+      const pengembalian = await pengembalianRepository.findAll();
+      res.status(200).json(pengembalian);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+
+  getPengembalianById = async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const pengembalian = await pengembalianRepository.findById(id);
+      res.status(200).json(pengembalian);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+
+  getPengembalianByUserId = async (req, res) => {
+    try {
+      const userID = Number(req.params.userId);
+      const pengembalian = await pengembalianRepository.findByUserID(userID);
+      res.status(200).json(pengembalian);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+
+createPengembalian = async (req, res) => {
+  try {
+    const { PeminjamanID, UserID, BukuID, TanggalPengembalian } = req.body;
+
+    // pastikan semuanya dikirim
+    if (!PeminjamanID || !UserID || !BukuID) {
+      return res.status(400).json({
+        message: "Data tidak lengkap: PeminjamanID, UserID, dan BukuID wajib diisi",
+      });
+    }
+
+    const pengembalianData = await pengembalianRepository.createPengembalian({
+      PeminjamanID,
+      UserID,
+      BukuID, // ⬅️ tambahkan ini!
+      TanggalPengembalian,
+    });
+
+    res.status(201).json(pengembalianData);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 
-class PengembalianController{
-    async getAllPengembalian(req,res){
-        try{
-            const pengembalian=await pengembalianRepository.findAll();
-            res.json(pengembalian);
-    }catch(err){
-        res.status(500).json({message:err.message});
-    } 
+  deletePengembalian = async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const deleted = await pengembalianRepository.delete(id);
+      res.status(200).json({ message: "Pengembalian berhasil dihapus", deleted });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
 }
-    async getPengembalianById(req, res) {
-        try {
-            const pengembalian = await pengembalianRepository.findById(req.params.id);
-            if (!pengembalian) return res.status(404).json({ message: 'Pengembalian not found' });
-            res.json(pengembalian);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-    async getPengembalianByUserId(req,res){
-        try{
-            const {userID}=req.params
-            const pengembalian=await pengembalianRepository.findByUserID(userID);
 
-            if(!pengembalian || pengembalian.length ===0){
-                return res.status(404).json({message:'Tidak ada data pengembalian untuk user ini'})
-            }
-            res.json(pengembalian);
-        }catch(err){
-            res.status(500).json({message:err.message})
-        }
-    }
-    async createPengembalian(req,res){
-        try{
-            const data={
-               ...req.body,
-             TanggalPengembalian: new Date().toISOString()
-            };
-
-            if(!data.PeminjamanID||!data.UserID||!data.BukuID){
-                return res.status(400).json({err:'Data Tidak lengkap:PeminjamanID,userID dan PengembalianId wajib diisi'})
-
-            }
-
-const tnggalPengembalian = new Date();
-
-            const pengembalian=await pengembalianRepository.createPengembalian(data);
-            res.json(pengembalian)
-        }catch(err){
-            res.status(500).json({message:err.message});
-        }
-    }
-  
-    async deletePengembalian(req,res){
-        try{
-            const deletedPengembalian=await pengembalianRepository.delete(req.params.id);
-            if(!deletedPengembalian)return res.status(404).json({message:'Pengembalian not found'});
-            res.json({message:'Pengembalian Deleted succesfully'});
-        }catch(err){
-            res.status(500).json({message:err.message});
-        }
-    }
-  
-}module.exports=new PengembalianController();
+module.exports = new PengembalianController();
