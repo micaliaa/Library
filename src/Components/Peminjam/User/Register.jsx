@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import registerImage from "../../../assets/tampilan login.png"; 
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
-
+import Swal from 'sweetalert2';
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Register = () => {
@@ -25,8 +25,14 @@ const Register = () => {
     try {
       // Register
       const response = await axios.post(`${API_URL}/akun/register`, formData);
-      alert(response.data.message);
-
+        Swal.fire({
+    text: 'Register successful!',
+  confirmButtonText: 'OK',
+  width: '280px',
+  padding: '0.8em',
+  backdrop: false
+  });
+    
       // Login otomatis setelah register
       const loginRes = await axios.post(`${API_URL}/akun/login`, {
         Email: formData.Email,
@@ -42,10 +48,17 @@ const Register = () => {
 
       navigate('/dashboard');
     } catch (error) {
-      alert(error.response?.data?.message || 'Registrasi gagal!');
-    }
-  };
-
+  Swal.fire({
+    confirmButtonText: 'OK',
+  width: '280px',
+  padding: '0.8em',
+  backdrop: false,
+    title: 'Register Failed',
+    text: error.response?.data?.message || 'Something went wrong, please try again.',
+    confirmButtonText: 'Close'
+  });
+}
+}
   return (
     <div className="flex min-h-screen bg-[#FFF9F3]">
       <div className="flex flex-col justify-center w-full md:w-1/2 px-10 md:px-20">

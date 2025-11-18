@@ -31,102 +31,114 @@ export default function AdminReports() {
     fetchReportData();
   }, []);
 
-  async function fetchReportData() {
-    try {
-      const token = localStorage.getItem("token");
-      const headers = { headers: { Authorization: `Bearer ${token}` } };
+async function fetchReportData() {
+  try {
+    const token = localStorage.getItem("token");
+    const headers = { headers: { Authorization: `Bearer ${token}` } };
 
-      const [pengembalianRes, pemRes] = await Promise.all([
-        axios.get(`${API_URL}/pengembalian`, headers),
-        axios.get(`${API_URL}/peminjaman`, headers),
-      ]);
+    const [pengembalianRes, pemRes] = await Promise.all([
+      axios.get(`${API_URL}/pengembalian`, headers),
+      axios.get(`${API_URL}/peminjaman`, headers),
+    ]);
 
-      const pengembalian = pengembalianRes.data || [];
-      const peminjaman = pemRes.data || [];
+    const pengembalian = pengembalianRes.data || [];
+    const peminjaman = pemRes.data || [];
 
-      const now = new Date();
-      const bulanSekarang = now.getMonth();
-      const tahunSekarang = now.getFullYear();
+   
+    console.log("Data peminjaman:", peminjaman);
+    console.log("Data pengembalian:", pengembalian);
 
-      // Total borrowed this month
-      const totalBorrow = peminjaman.filter(p => {
+    const now = new Date();
+    const bulanSekarang = now.getMonth();
+    const tahunSekarang = now.getFullYear();
+
+    // Total borrowed this month
+    const totalBorrow = peminjaman.filter(p => {
+      if (!p.TanggalPeminjaman) return false;
+      const tgl = new Date(p.TanggalPeminjaman);
+      return tgl.getMonth() === bulanSekarang && tgl.getFullYear() === tahunSekarang;
+    }).length;
+
+    // Total returned this month
+    const totalReturn = pengembalian.filter(p => {
+      if (!p.TanggalPengembalian) return false;
+      const tgl = new Date(p.TanggalPengembalian);
+      return tgl.getMonth() === bulanSekarang && tgl.getFullYear() === tahunSekarang;
+    }).length;
+
+   
+   const allUserIDs = peminjaman.map(p => p.User?.UserID);
+
+    console.log("All UserIDs:", allUserIDs);
+    const activeUsers = new Set(allUserIDs.filter(id => id !== undefined)).size;
+    console.log("Active Users:", activeUsers);
+
+    //  Top books
+    const countBooks = {};
+    peminjaman.forEach(p => {
+      const title = p.buku?.Judul;
+      if (title) countBooks[title] = (countBooks[title] || 0) + 1;
+    });
+    const sortedBooks = Object.entries(countBooks).sort((a, b) => b[1] - a[1]);
+    const topBook = sortedBooks.length > 0 ? sortedBooks[0][0] : "-";
+    const topBooksMapped = sortedBooks.slice(0,5).map(([title,count]) => ({ title, count }));
+    console.log("Count per book:", countBooks);
+    console.log("Top Books:", topBooksMapped);
+
+    //  Update state
+    setStats({ totalBorrow, totalReturn, activeUsers, topBook });
+    setTopBooks(topBooksMapped);
+
+    // Monthly data for chart
+    const monthly = Array.from({ length: 12 }, (_, i) => {
+      const borrowed = peminjaman.filter(p => {
         if (!p.TanggalPeminjaman) return false;
         const tgl = new Date(p.TanggalPeminjaman);
-        return tgl.getMonth() === bulanSekarang && tgl.getFullYear() === tahunSekarang;
+        return tgl.getMonth() === i && tgl.getFullYear() === tahunSekarang;
       }).length;
 
-      // Total returned this month
-      const totalReturn = pengembalian.filter(p => {
+      const returned = pengembalian.filter(p => {
         if (!p.TanggalPengembalian) return false;
         const tgl = new Date(p.TanggalPengembalian);
-        return tgl.getMonth() === bulanSekarang && tgl.getFullYear() === tahunSekarang;
+        return tgl.getMonth() === i && tgl.getFullYear() === tahunSekarang;
       }).length;
 
-      const activeUsers = new Set(peminjaman.map(p => p.UserID)).size;
+      return { month: i, borrowed, returned };
+    });
 
-      // Top books
-      const countBooks = {};
-      peminjaman.forEach(p => {
-        const title = p.buku?.Judul;
-        if (title) countBooks[title] = (countBooks[title] || 0) + 1;
-      });
-      const sortedBooks = Object.entries(countBooks).sort((a,b) => b[1] - a[1]);
-      const topBook = sortedBooks.length > 0 ? sortedBooks[0][0] : "-";
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const borrowDataMapped = monthly.map(m => ({
+      month: monthNames[m.month],
+      borrow: m.borrowed,
+      return: m.returned
+    }));
+    setBorrowData(borrowDataMapped);
 
-      setStats({ totalBorrow, totalReturn, activeUsers, topBook });
+    // Logs
+    const logsFormatted = peminjaman.map(p => {
+      const matchReturn = pengembalian.find(r => r.PeminjamanID == p.PeminjamanID);
+      const returnDate = matchReturn?.TanggalPengembalian
+        ? matchReturn.TanggalPengembalian.split("T")[0]
+        : "-";
 
-      // Monthly data
-      const monthly = Array.from({ length: 12 }, (_, i) => {
-        const borrowed = peminjaman.filter(p => {
-          if (!p.TanggalPeminjaman) return false;
-          const tgl = new Date(p.TanggalPeminjaman);
-          return tgl.getMonth() === i && tgl.getFullYear() === tahunSekarang;
-        }).length;
+      return {
+        id: p.PeminjamanID,
+        user: p.User?.NamaLengkap || "-",
+        book: p.buku?.Judul || "-",
+        borrow: p.TanggalPeminjaman ? p.TanggalPeminjaman.split("T")[0] : "-",
+        return: returnDate
+      };
+    });
 
-        const returned = pengembalian.filter(p => {
-          if (!p.TanggalPengembalian) return false;
-          const tgl = new Date(p.TanggalPengembalian);
-          return tgl.getMonth() === i && tgl.getFullYear() === tahunSekarang;
-        }).length;
+    setLogs(logsFormatted);
+    setOriginalLogs(logsFormatted);
 
-        return { month: i, borrowed, returned };
-      });
-
-      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      const borrowDataMapped = monthly.map(m => ({
-        month: monthNames[m.month],
-        borrow: m.borrowed,
-        return: m.returned
-      }));
-      setBorrowData(borrowDataMapped);
-
-      const topBooksMapped = sortedBooks.slice(0,5).map(([title,count]) => ({ title, count }));
-      setTopBooks(topBooksMapped);
-
-      // Logs
-  const logsFormatted = peminjaman.map(p => {
-  const matchReturn = pengembalian.find(r => r.PeminjamanID == p.PeminjamanID); // pakai == supaya cocok
-  const returnDate = matchReturn?.TanggalPengembalian
-    ? matchReturn.TanggalPengembalian.split("T")[0]
-    : "-";
-
-  return {
-    id: p.PeminjamanID,
-    user: p.User?.NamaLengkap || "-",
-    book: p.buku?.Judul || "-",
-    borrow: p.TanggalPeminjaman ? p.TanggalPeminjaman.split("T")[0] : "-",
-    return: returnDate
-  };
-});
-
-
-      setLogs(logsFormatted);
-      setOriginalLogs(logsFormatted);
-
-    } catch (err) {
-      console.error(err);
-    }
+  } catch (err) {
+    console.error(err);
   }
+}
+
+
 
   function handleFilter() {
   const filtered = originalLogs.filter(l => {
@@ -140,7 +152,7 @@ export default function AdminReports() {
     } else if (endDate) {
       return d <= new Date(endDate);
     }
-    return true;
+    return true;  
   });
 
   setLogs(filtered);
@@ -174,7 +186,7 @@ export default function AdminReports() {
     <div className="bg-[#F5E6D3] min-h-screen flex">
       <SidebarAdmin />
 
-      <main className="flex-1 p-8">
+      <main className="flex-1 ml-64  p-8">
         <h1 className="text-3xl font-bold text-[#7B3F00] mb-6">Library Report</h1>
 
         {/* Cards */}
@@ -210,8 +222,10 @@ export default function AdminReports() {
                 <XAxis 
                   dataKey="title"
                   interval={0}
+                   tickFormatter={(title) => title.length > 7 ? title.slice(0, 7) + "..." : title}
                   angle={0}
                   textAnchor="middle"
+                  height={70}   
                   style={{ fontSize: 12, fontFamily: "Noto Sans JP, sans-serif" }}
                 />
                 <YAxis />
@@ -240,14 +254,14 @@ export default function AdminReports() {
             <button className="bg-[#7B3F00] text-white px-4 py-2 rounded hover:bg-[#633200]" onClick={handleFilter}>
               Filter
             </button>
-            <button className="bg-[#D29D6A] text-white px-4 py-2 rounded hover:bg-[#b37a56]" onClick={handleExportCSV}>
+            <button className="bg-white text-[#7B3F00] border border-[#7B3F00] hover:bg-[#F5E6D3] rounded px-2 py-2" onClick={handleExportCSV}>
               Export CSV
             </button>
           </div>
 
           {/* Table */}
           <table className="min-w-full bg-white">
-            <thead className="bg-[#D29D6A] text-white">
+            <thead className="bg-[#F5E6D3]  text-[#7B3F00] ">
               <tr>
                 <th className="p-2 text-left">No</th>
                 <th className="p-2 text-left">User</th>

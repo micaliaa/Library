@@ -1,20 +1,16 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import SidebarAdmin from "../Sidebar/sidebarAdmin";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL;
-
-
 
 const roleDisplayMap = {
   administrator: "Admin",
   petugas: "Staff",
   peminjam: "Member"
 };
-
 
 const roleBackendMap = {
   Admin: "Administrator",
@@ -26,7 +22,6 @@ function toDisplayRole(role) {
   return roleDisplayMap[role?.toLowerCase()] || "Member";
 }
 
-
 function toBackendRole(role) {
   return roleBackendMap[role] || "Peminjam";
 }
@@ -37,9 +32,6 @@ function normalizeRoleKey(role) {
   if (r === "petugas") return "officer";
   return "member";
 }
-
-
-
 
 const RoleBadge = ({ role }) => {
   const base = "inline-block text-xs font-semibold px-2 py-1 rounded-full";
@@ -80,8 +72,10 @@ const ManageUsers = () => {
   const [editUser, setEditUser] = useState(null);
   const [form, setForm] = useState({
     name: "",
+    username: "",
     email: "",
     password: "",
+    alamat: "",
     role: "Member"
   });
 
@@ -145,7 +139,7 @@ const ManageUsers = () => {
 
   const openAdd = () => {
     setEditUser(null);
-    setForm({ name: "", email: "", password: "", role: "Member" });
+    setForm({ name: "", username: "", email: "", password: "", alamat: "", role: "Admin" });
     setModalOpen(true);
   };
 
@@ -153,8 +147,10 @@ const ManageUsers = () => {
     setEditUser(u);
     setForm({
       name: u.NamaLengkap || "",
+      username: u.Username || "",
       email: u.Email || "",
       password: "",
+      alamat: u.Alamat || "",
       role: toDisplayRole(u.Role)
     });
     setModalOpen(true);
@@ -163,30 +159,27 @@ const ManageUsers = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const payload = {
+      NamaLengkap: form.name,
+      Username: form.username,
+      Email: form.email,
+      Alamat: form.alamat,
+      Role: toBackendRole(form.role)
+    };
+    if (form.password) payload.Password = form.password;
+
     try {
       if (editUser) {
-        const payload = {
-          NamaLengkap: form.name,
-          Email: form.email,
-          Role: toBackendRole(form.role)
-        };
-        if (form.password) payload.password = form.password;
-
         await axios.put(`${API_URL}/users/${editUser.UserID}`, payload, headers);
         toast.success("User updated");
       } else {
-        await axios.post(`${API_URL}/users`, {
-          NamaLengkap: form.name,
-          Email: form.email,
-          Password: form.password,
-          Role: toBackendRole(form.role)
-        }, headers);
+        await axios.post(`${API_URL}/users`, payload, headers);
         toast.success("User added");
       }
 
       setModalOpen(false);
       setEditUser(null);
-      setForm({ name: "", email: "", password: "", role: "Member" });
+      setForm({ name: "", username: "", email: "", password: "", alamat: "", role: "Admin" });
       fetchUsers();
     } catch (err) {
       toast.error("Save failed");
@@ -214,7 +207,8 @@ const ManageUsers = () => {
   return (
     <div className="flex min-h-screen">
       <SidebarAdmin />
-      <main className="flex-1 bg-[#F5E6D3] p-8">
+      <main className="flex-1 ml-64 bg-[#F5E6D3] p-8">
+        <ToastContainer />
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-[#7B3F00]">Manage Users</h1>
           <button onClick={openAdd} className="bg-[#D29D6A] text-white px-4 py-2 rounded hover:bg-[#b37a56]">
@@ -262,7 +256,7 @@ const ManageUsers = () => {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
             placeholder="Search name or email..."
-            className="p-2 rounded-md border outline-none"
+            className="p-2 bg-white rounded-md border px-10 outline-none border-amber-800"
           />
         </div>
 
@@ -332,51 +326,75 @@ const ManageUsers = () => {
 
         {/* modal */}
         {modalOpen && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6">
-              <h2 className="text-xl font-bold mb-4 text-[#7B3F00]">{editUser ? "Edit User" : "Add User"}</h2>
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] p-6 overflow-y-auto">
+      <h2 className="text-xl font-bold mb-4 text-[#7B3F00]">{editUser ? "Edit User" : "Add User"}</h2>
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                <label className="text-sm font-medium">Name</label>
-                <input
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
-                  className="p-2 border rounded"
-                />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <label className="text-sm font-medium">Username</label>
+        <input
+          required
+          value={form.username}
+          onChange={(e) => setForm(f => ({ ...f, username: e.target.value }))}
+          className="p-2 border rounded"
+        />
 
-                <label className="text-sm font-medium">Email</label>
-                <input
-                  required
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
-                  className="p-2 border rounded"
-                />
+        <label className="text-sm font-medium">Full Name</label>
+        <input
+          required
+          value={form.name}
+          onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
+          className="p-2 border rounded"
+        />
 
-                <label className="text-sm font-medium">Role</label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))}
-                  className="p-2 border rounded"
-                >
-                  <option value="Admin">Admin</option>
-                  <option value="Staff">Staff</option>
-                  <option value="Member">Member</option>
-                </select>
+        <label className="text-sm font-medium">Email</label>
+        <input
+          required
+          type="email"
+          value={form.email}
+          onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+          className="p-2 border rounded"
+        />
 
-                <div className="flex gap-2 mt-3">
-                  <button type="submit" className="flex-1 bg-[#D29D6A] text-white py-2 rounded">
-                    Save
-                  </button>
-                  <button type="button" onClick={() => { setModalOpen(false); setEditUser(null); }} className="flex-1 border rounded py-2">
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <label className="text-sm font-medium">Password</label>
+        <input
+          type="password"
+          value={form.password}
+          onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
+          className="p-2 border rounded"
+        />
+
+        <label className="text-sm font-medium">Address</label>
+        <textarea
+          value={form.alamat}
+          onChange={(e) => setForm(f => ({ ...f, alamat: e.target.value }))}
+          className="p-2 border rounded"
+        />
+
+        <label className="text-sm font-medium">Role</label>
+        <select
+          value={form.role}
+          onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))}
+          className="p-2 border rounded"
+        >
+          <option value="Admin">Admin</option>
+          <option value="Staff">Staff</option>
+       
+        </select>
+
+        <div className="flex gap-2 mt-3">
+          <button type="submit" className="flex-1 bg-[#D29D6A] text-white py-2 rounded">
+            Save
+          </button>
+          <button type="button" onClick={() => { setModalOpen(false); setEditUser(null); }} className="flex-1 border rounded py-2">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
 
       </main>
     </div>

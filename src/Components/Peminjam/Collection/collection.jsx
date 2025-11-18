@@ -8,6 +8,9 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SearchBuku from "../Buku/search";
 import { normalizeStatuses } from "../../../../src/Components/utils/translateStatus";
+import { FaBars, FaUserCircle } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+
 import Swal from "sweetalert2";
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -17,6 +20,9 @@ const Collection = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+const navigate = useNavigate();
+
 
   const UserID = localStorage.getItem("UserID");
 
@@ -63,7 +69,7 @@ const Collection = () => {
         console.error(err);
         setError("Failed to fetch collection data");
       } finally {
-        setLoading(false);
+        setLoading(false);  
       }
     };
 
@@ -165,15 +171,31 @@ const handleRemove = async (BukuID) => {
 
   return (
     <div className="min-h-screen bg-[#F5E6D3] flex text-gray-800">
-      <SidebarPeminjam />
-      <div className="flex-1 mt-10 px-4">
+    <SidebarPeminjam
+  isOpen={mobileSidebarOpen}
+  onClose={() => setMobileSidebarOpen(false)}
+/>
+
+      <div className="flex-1 mt-10  md:pl-72 px-4">
+        {/* Header bar mobile */}
+<div className="flex items-center justify-between md:hidden mb-3 px-4 mt-4">
+  <button onClick={() => setMobileSidebarOpen(true)} className="text-[#7B3F00] text-2xl">
+    <FaBars />
+  </button>
+  <h1 className="text-lg font-semibold text-[#7B3F00]">Categories</h1>
+  <FaUserCircle
+    onClick={() => navigate("/profile")}
+    className="text-3xl text-[#7B3F00] hover:text-[#B67438] cursor-pointer"
+  />
+</div>
+
         <Hero2 />
 
         {/* Count + Search */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           {user && (
             <div className="flex flex-wrap gap-6 mt-6 mb-8 text-[#7B3F00] font-semibold">
-              <div className="flex items-center gap-3 bg-[#FFF2E0] rounded-2xl shadow-sm border border-[#D29D6A] px-6 py-4 hover:shadow-md transition">
+              {/* <div className="flex items-center gap-3 bg-[#FFF2E0] rounded-2xl shadow-sm border border-[#D29D6A] px-6 py-4 hover:shadow-md transition">
                 <TbBooks className="text-2xl text-[#B67438]" />
                 <div>
                   <p className="text-sm text-[#5A4A42]">My Active Borrowing</p>
@@ -181,7 +203,7 @@ const handleRemove = async (BukuID) => {
                     {user.ActiveBorrowCount}
                   </p>
                 </div>
-              </div>
+              </div> */}
 
               <div className="flex items-center gap-3 bg-[#FFF2E0] rounded-2xl shadow-sm border border-[#D29D6A] px-6 py-4 hover:shadow-md transition">
                 <TbFolder className="text-2xl text-[#B67438]" />
@@ -203,19 +225,19 @@ const handleRemove = async (BukuID) => {
         </div>
 
         {/* Book Cards per row */}
-        <div className="space-y-6 border-t-10 border-[#B67438] pt-4">
-          {rows.map((row, rowIndex) => (
-            <div
-              key={rowIndex}
-              className="flex flex-wrap justify-center gap-6 pb-4 border-b-10 border-[#B67438]"
-            >
-              {row.map((book) => {
-                const data = book.buku || book;
-                return (
-                  <div
-                    key={book.KoleksiID}
-                    className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0 w-[280px] h-[160px] overflow-hidden"
-                  >
+     <div className="space-y-6 border-t-4 border-[#B67438] pt-4 px-6">
+  {rows.map((row, rowIndex) => (
+    <div
+      key={rowIndex}
+      className="flex flex-wrap gap-6 justify-start pb-4 border-b-4 border-[#B67438]"
+    >
+      {row.map((book) => {
+        const data = book.buku || book;
+        return (
+          <div
+            key={book.KoleksiID}
+            className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0 w-[280px] h-[160px] overflow-hidden"
+          >
                     <img
                       src={
                         data.Gambar
@@ -265,10 +287,12 @@ const handleRemove = async (BukuID) => {
           ))}
         </div>
 
-        <ToastContainer />
+      
       </div>
     </div>
   );
 };
 
 export default Collection;
+
+

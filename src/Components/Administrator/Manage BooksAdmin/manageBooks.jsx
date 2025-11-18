@@ -18,7 +18,7 @@ const CategoryBadge = ({ name }) => (
   <span className="inline-block text-xs font-semibold px-2 py-1 rounded-full bg-[#D29D6A] text-white mr-1 mb-1">{name}</span>
 );
 
-// Add/Edit Book 
+// add/Edit Book 
 const BookModal = ({ mode = "add", book = null, categories = [], API_URL, headers, onClose, onSuccess }) => {
   const [judul, setJudul] = useState(book?.Judul || "");
   const [penulis, setPenulis] = useState(book?.Penulis || "");
@@ -126,22 +126,25 @@ const BookModal = ({ mode = "add", book = null, categories = [], API_URL, header
             </div>
 
             <div>
-              <label className="text-sm font-medium">Year</label>
-              <input type="number" value={tahun} onChange={e => setTahun(e.target.value)} className="w-32 p-2 border rounded" />
+              <label className="text-sm flex flex-col font-medium">Year</label>
+              <input type="number" value={tahun} onChange={e => setTahun(e.target.value)} className="w-32 p-2 mb-1 border rounded" />
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Categories</label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {categories.map(cat => (
-                  <label key={cat.KategoriID} className={`cursor-pointer py-1 px-2 rounded border ${selectedCats.includes(cat.KategoriID) ? "bg-[#7B3F00] text-white" : "bg-white text-[#7B3F00]"}`}>
-                    <input type="checkbox" checked={selectedCats.includes(cat.KategoriID)} onChange={() => toggleCat(cat.KategoriID)} className="hidden" />
-                    {cat.NamaKategori}
-                  </label>
-                ))}
-                {categories.length === 0 && <div className="text-sm text-gray-500">No categories. Add some below.</div>}
-              </div>
-            </div>
+           {mode === "edit" && (
+  <div>
+    <label className="text-sm font-medium">Categories</label>
+    <div className="flex flex-wrap gap-2 mt-2">
+      {categories.map(cat => (
+        <label key={cat.KategoriID} className={`cursor-pointer py-1 px-2 rounded border ${selectedCats.includes(cat.KategoriID) ? "bg-[#7B3F00] text-white" : "bg-white text-[#7B3F00]"}`}>
+          <input type="checkbox" checked={selectedCats.includes(cat.KategoriID)} onChange={() => toggleCat(cat.KategoriID)} className="hidden" />
+          {cat.NamaKategori}
+        </label>
+      ))}
+      {categories.length === 0 && <div className="text-sm text-gray-500">No categories. Add some below.</div>}
+    </div>
+  </div>
+)}
+
           </div>
 
           <div className="space-y-3">
@@ -245,18 +248,18 @@ const CategoryManager = ({ open, onClose, onReload, API_URL, headers }) => {
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             {loading ? <p>Loading...</p> : (
-              <ul className="space-y-2">
-                {categories.map(cat => (
-                  <li key={cat.KategoriID} className="flex items-center justify-between p-2 border rounded">
-                    <div className="font-medium">{cat.NamaKategori}</div>
-                    <div className="flex gap-2">
-                      <button className="text-blue-600" onClick={() => setEdit(cat)}>Edit</button>
-                      <button className="text-red-600" onClick={() => handleDelete(cat.KategoriID)}>Delete</button>
-                    </div>
-                  </li>
-                ))}
-                {categories.length === 0 && <div className="text-sm text-gray-500">No categories yet.</div>}
-              </ul>
+               <ul className="space-y-2 max-h-96 overflow-y-auto">
+  {categories.map(cat => (
+    <li key={cat.KategoriID} className="flex items-center justify-between p-2 border rounded">
+      <div className="font-medium">{cat.NamaKategori}</div>
+      <div className="flex gap-2">
+        <button className="text-blue-600" onClick={() => setEdit(cat)}>Edit</button>
+        <button className="text-red-600" onClick={() => handleDelete(cat.KategoriID)}>Delete</button>
+      </div>
+    </li>
+  ))}
+  {categories.length === 0 && <div className="text-sm text-gray-500">No categories yet.</div>}
+</ul>
             )}
           </div>
 
@@ -417,21 +420,31 @@ const ManageBooksAdmin = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <SidebarAdmin />
-      <main className="flex-1 bg-[#F5E6D3] p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-[#7B3F00]">Manage Books</h1>
-          <div className="flex gap-3 items-center">
-            <button onClick={() => setShowCategoryManager(true)} className="px-3 py-2 border rounded">Manage Categories</button>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="bg-[#D29D6A] text-white px-4 py-2 rounded hover:bg-[#b37a56]"
-            >
-              + Add Book
-            </button>
-          </div>
-        </div>
+    <div className="flex min-h-screen overflow-hidden">
+  <SidebarAdmin />
+  <main className="flex-1 ml-64 bg-[#F5E6D3] p-8 overflow-x-hidden">
+       <div className="flex items-center justify-between mb-6">
+  <div className="flex items-center gap-4">
+    <h1 className="text-3xl font-bold text-[#7B3F00]">Manage Books</h1>
+    <input
+      value={query}
+      onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+      placeholder="Search books..."
+      className="p-2 rounded-md border border-[#CBA47C] outline-none focus:ring-2 focus:ring-[#7B3F00] w-100"
+    />
+  </div>
+
+  <div className="flex gap-3 items-center">
+    <button onClick={() => setShowCategoryManager(true)} className="px-3 py-2 border rounded">Manage Categories</button>
+    <button
+      onClick={() => setShowAdd(true)}
+      className="bg-[#D29D6A] text-white px-4 py-2 rounded hover:bg-[#b37a56]"
+    >
+      + Add Book
+    </button>
+  </div>
+</div>
+
 
    
         <div className="flex gap-4 mb-6">
@@ -445,38 +458,39 @@ const ManageBooksAdmin = () => {
           </div>
         </div>
 
-        {/* filter dn search */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-2 overflow-auto">
-            <button
-              onClick={() => { setActiveCategory("all"); setPage(1); }}
-              className={`px-4 py-2 rounded-full font-medium ${activeCategory === "all" ? "bg-[#7B3F00] text-white" : "bg-white text-[#7B3F00] hover:bg-[#f0e6de]"}`}
-            >
-              All ({counts.total})
-            </button>
+       
 
-            {categories.map(cat => (
-              <button
-                key={cat.KategoriID}
-                onClick={() => { setActiveCategory(cat.KategoriID); setPage(1); }}
-                className={`px-4 py-2 rounded-full font-medium ${activeCategory === cat.KategoriID ? "bg-[#7B3F00] text-white" : "bg-white text-[#7B3F00] hover:bg-[#f0e6de]"}`}
-              >
-                {cat.NamaKategori} ({counts[cat.KategoriID] || 0})
-              </button>
-            ))}
-          </div>
 
-          <div className="flex gap-2 items-center">
-            <input
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-              placeholder="Search title, author, publisher..."
-              className="p-2 rounded-md border outline-none"
-            />
-          </div>
-        </div>
 
-        {/* table */}
+<div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+  <button
+    onClick={() => { setActiveCategory("all"); setPage(1); }}
+    className={`flex-shrink-0 px-4 py-2 rounded-full font-medium transition ${
+      activeCategory === "all"
+        ? "bg-[#7B3F00] text-white shadow"
+        : "bg-white text-[#7B3F00] hover:bg-[#F5E6D3] border"
+    }`}
+  >
+    All ({counts.total})
+  </button>
+
+  {categories.map((cat) => (
+    <button
+      key={cat.KategoriID}
+      onClick={() => { setActiveCategory(cat.KategoriID); setPage(1); }}
+      className={`flex-shrink-0 px-4 py-2 rounded-full font-medium transition ${
+        activeCategory === cat.KategoriID
+          ? "bg-[#7B3F00] text-white shadow"
+          : "bg-white text-[#7B3F00] hover:bg-[#F5E6D3] border"
+      }`}
+    >
+      {cat.NamaKategori} ({counts[cat.KategoriID] || 0})
+    </button>
+  ))}
+</div>
+
+
+          
         <div className="bg-white rounded-2xl shadow overflow-hidden">
           <table className="min-w-full">
             <thead className="bg-[#D29D6A] text-white">
@@ -485,7 +499,9 @@ const ManageBooksAdmin = () => {
                 <th className="p-3 text-left">Cover</th>
                 <th className="p-3 text-left">Title</th>
                 <th className="p-3 text-left">Author</th>
-                <th className="p-3 text-left">Publisher / Year</th>
+            <th className="p-3 text-left">Publisher</th>
+              <th className="p-3 text-left">Year</th>
+
                 <th className="p-3 text-left">Categories</th>
                 <th className="p-3 text-left">Actions</th>
               </tr>
@@ -514,7 +530,10 @@ const ManageBooksAdmin = () => {
                     <div className="text-sm text-gray-500">ID: {b.BukuID}</div>
                   </td>
                   <td className="p-3">{b.Penulis || "-"}</td>
-                  <td className="p-3">{(b.Penerbit || "-")} / {b.TahunTerbit || "-"}</td>
+                <td className="p-3">{b.Penerbit || "-"}</td>
+               
+               <td className="p-3">{b.TahunTerbit || "-"}</td>
+
                   <td className="p-3">
                     {(b.Kategori || []).length > 0 ? (b.Kategori.map(k => <CategoryBadge key={k.KategoriID} name={k.NamaKategori} />)) : "-"}
                   </td>

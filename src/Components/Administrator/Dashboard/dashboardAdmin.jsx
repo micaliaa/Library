@@ -80,7 +80,7 @@ const DashboardAdmin = () => {
     navigate("/login");
   };
 
-  //  Close dropdown outside click
+  //  Close dropdown click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -197,7 +197,7 @@ const activeBorrowings = loansRes.data.filter(
   return (
     <div className="flex min-h-screen">
       <SidebarAdmin />
-      <main className="flex-1 bg-[#F5E6D3] p-8 relative">
+      <main className="flex-1 ml-64 bg-[#F5E6D3] p-8 relative">
         {/*  Header */}
         <div
           className="w-full flex justify-between items-center mb-6 relative"

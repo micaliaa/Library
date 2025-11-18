@@ -56,7 +56,7 @@ const Returns = () => {
   return (
     <div className="flex min-h-screen bg-[#F5E6D3]">
       <SidebarPetugas />
-      <main className="flex-1 p-8 py-15">
+      <main className="flex-1 p-8 md:pl-72 py-15">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           <h1 className="text-3xl font-bold text-[#7B3F00]">Returned Books</h1>
           <button

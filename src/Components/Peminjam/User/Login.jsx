@@ -83,7 +83,7 @@ const Login = () => {
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B3F00]"
             />
             <div className="flex justify-between text-sm mt-2">
-              <a href="#" className="text-black hover:underline">
+              <a href="/forgotPassword" className="text-black hover:underline">
                 Forgot password?
               </a>  
             </div>

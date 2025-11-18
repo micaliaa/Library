@@ -154,7 +154,7 @@ setActiveLoans(activeBorrowings);
   return (
     <div className="flex min-h-screen">
       <SidebarPetugas />
-      <main className="flex-1 bg-[#F5E6D3] p-8 relative">
+      <main className="flex-1 md:pl-72 bg-[#F5E6D3] p-8 relative">
         <div className="w-full flex justify-between items-center mb-6 relative" ref={dropdownRef}>
           <div>
             <h1 className="text-3xl font-bold text-[#7B3F00]">Dashboard</h1>

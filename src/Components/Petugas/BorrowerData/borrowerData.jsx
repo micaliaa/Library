@@ -41,7 +41,7 @@ const BorrowersData = () => {
   }, [borrowers, page]);
 
   return (
-    <div className="flex min-h-screen bg-[#F5E6D3]">
+    <div className="flex min-h-screen md:pl-72 bg-[#F5E6D3]">
       <SidebarPetugas />
       <main className="flex-1 p-8">
         <h1 className="text-3xl font-bold text-[#7B3F00] mb-6">Borrower Data</h1>

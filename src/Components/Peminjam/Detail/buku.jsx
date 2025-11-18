@@ -37,28 +37,57 @@ const Buku = () => {
     ));
 
   // handlePinjamBuku
-  const handlePinjamBuku = async () => {
+const handlePinjamBuku = async () => {
   if (!userID) return toast.error("You must log in first!");
   setIsBorrowing(true);
 
-  const formatDate = (date) => {
-    const d = new Date(date);
-    const month = "" + (d.getMonth() + 1);
-    const day = "" + d.getDate();
-    const year = d.getFullYear();
-    return [year, month.padStart(2, "0"), day.padStart(2, "0")].join("-");
-  };
-
-  const today = new Date();
-  const sevenDaysLater = new Date();
-  sevenDaysLater.setDate(today.getDate() + 7);
-
   try {
-    // 🧠 Tambahan: cek dulu jumlah buku yang sedang dipinjam user
     const res = await api.get(`/peminjaman/user/${userID}`, { headers: authHeaders() });
-    const activeBorrowings = res.data.filter(
-      (item) => item.StatusPeminjaman === "Dipinjam"
-    ).length;
+    console.log("Raw borrowings from API:", res.data);
+
+
+
+    // CEK ADA BUKU LATE
+const hasLateBook = res.data.some(  
+  (item) =>
+    (item.StatusPeminjaman || "").toLowerCase().trim() === "late" &&
+    !item.TanggalDikembalikan
+);
+
+if (hasLateBook) {
+  toast.error("❌ You have a Late book. Return it before borrowing a new one.");
+  setIsBorrowing(false);
+  return;
+}
+
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // hanya tanggal
+
+    // Map untuk menyimpan buku unik yang masih aktif
+    const borrowingsMap = new Map();
+
+    res.data.forEach((item) => {
+      const status = item.StatusPeminjaman?.toLowerCase();
+      const isBorrowed = status === "dipinjam" || status === "borrowed";
+      const notReturned = !item.TanggalDikembalikan;
+
+      // Cek apakah peminjaman masih aktif
+      const dueDate = item.TanggalPengembalian ? new Date(item.TanggalPengembalian) : null;
+      const stillActive = dueDate ? dueDate >= today : isBorrowed;
+
+      console.log(
+        `Checking item: BukuID = ${item.BukuID} StatusPeminjaman = ${item.StatusPeminjaman} TanggalDikembalikan = ${item.TanggalDikembalikan} stillActive = ${stillActive}`
+      );
+
+      if (isBorrowed && notReturned && stillActive) {
+        borrowingsMap.set(item.BukuID, item);
+        console.log(`Added to active borrowings: ${item.BukuID}`);
+      }
+    });
+
+    const activeBorrowings = borrowingsMap.size;
+    console.log("Active borrowings (unique):", activeBorrowings);
 
     if (activeBorrowings >= 3) {
       toast.warn("You have reached the borrowing limit (3 books).");
@@ -66,13 +95,22 @@ const Buku = () => {
       return;
     }
 
-    // kalau belum 3, baru lanjut pinjam
+    // Format tanggal untuk API
+    const formatDate = (date) => {
+      const d = new Date(date);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    const todayDate = new Date();
+    const sevenDaysLater = new Date();
+    sevenDaysLater.setDate(todayDate.getDate() + 7);
+
     await api.post(
       "/peminjaman",
       {
         UserID: userID,
         BukuID: book.BukuID,
-        TanggalPeminjaman: formatDate(today),
+        TanggalPeminjaman: formatDate(todayDate),
         TanggalPengembalian: formatDate(sevenDaysLater),
         StatusPeminjaman: "Dipinjam",
       },
@@ -87,6 +125,7 @@ const Buku = () => {
     setIsBorrowing(false);
   }
 };
+
 
 
   const handleAddReview = async () => {

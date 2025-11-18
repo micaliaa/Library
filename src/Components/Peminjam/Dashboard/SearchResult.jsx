@@ -6,7 +6,7 @@ import Footer from "../../../Components/Peminjam/Footer/footer";
 
 
 const BookCard = ({ book, navigate }) => (
-  <div className="bg-[#F5E6D3] p-4 rounded-xl shadow hover:shadow-lg transition flex flex-col min-w-[200px] max-w-[220px]">
+  <div className="bg-[#d3a678] p-4 rounded-xl shadow hover:shadow-lg transition flex flex-col min-w-[200px] max-w-[220px]">
     <img
       src={`${api.defaults.baseURL}/${book.Gambar}`}
       alt={book.Judul || "Book"}
@@ -18,16 +18,16 @@ const BookCard = ({ book, navigate }) => (
     >
       {book.Judul}
     </h4>
-    <p className="text-xs sm:text-sm text-[#5A4A42] mt-1 line-clamp-2" title={book.Penulis}>
+    <p className="text-xs sm:text-sm text-white mt-1 line-clamp-2" title={book.Penulis}>
       By : {book.Penulis}
     </p>
-    <p className="text-xs sm:text-sm text-[#5A4A42] line-clamp-1" title={book.Penerbit}>
+    <p className="text-xs sm:text-sm text-white line-clamp-1" title={book.Penerbit}>
       Publisher: {book.Penerbit}
     </p>
-    <p className="text-xs sm:text-yellow-600 mt-1">⭐ {book.RataRataRating ? Number(book.RataRataRating).toFixed(1) : "4.5"}</p>
+    <p className="text-xs sm:text-white mt-1">⭐ {book.RataRataRating ? Number(book.RataRataRating).toFixed(1) : "4.5"}</p>
 
     <button
-      className="mt-2 bg-[#D29D6A] text-white px-2 py-1 rounded-lg text-xs sm:text-sm hover:bg-[#B67438]"
+      className="mt-2 bg-[#7B3F00]  text-white px-2 py-1 rounded-lg text-xs sm:text-sm hover:bg-[#B67438]"
       onClick={() => navigate(`/buku/${book.BukuID || ""}`)}
     >
       View Details
@@ -75,10 +75,10 @@ const SearchResult = () => {
   }, [query]);
 
   return (
-    <div className="flex min-h-screen bg-[#FFF9F3]">
+    <div className="flex min-h-screen bg-[#F5E6D3] ">
       <SidebarPeminjam />
 
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div className="flex-1 p-8 overflow-y-auto md:pl-72">
         <h2 className="text-2xl font-semibold text-white bg-[#B67438] px-6 py-2 rounded mb-4">
           🔍 Search Result: "{query}"
         </h2>

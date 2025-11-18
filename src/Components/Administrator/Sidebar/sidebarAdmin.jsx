@@ -3,57 +3,65 @@ import logo from '../../../assets/logo.png';
 import { FiHome, FiUsers, FiClipboard } from "react-icons/fi";
 import { PiBooksDuotone } from "react-icons/pi";
 import { MdOutlineReport } from "react-icons/md";
+import { AiOutlineLogout } from "react-icons/ai";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const SidebarAdmin = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("UserID");
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  const linkClasses = (isActive) =>
+    `flex items-center font-medium px-3 py-2 rounded transition-colors duration-200 ${
+      isActive
+        ? "bg-[#9C5A1F] text-[#FFF9F3]" 
+        : "text-[#F5E6D3] hover:bg-[#8B4F1F] hover:text-[#FFF9F3]"
+    }`;
+
   return (
-    <aside className="w-64 bg-[#4A1E00] text-[#F5E6D3] flex flex-col p-6">
+  <aside className="w-64 h-screen fixed top-0 left-0 bg-[#7B3F00] text-[#F5E6D3] flex flex-col p-6 overflow-hidden">
+
       {/* Logo */}
-      <div className="flex items-center space-x-2">
-        <img src={logo} className="w-12 h-12 rounded-full" alt="logo" />
-        <h1 className="text-2xl font-bold">M-Libry</h1>
+      <div className="flex items-center space-x-2 mb-6">
+        <img src={logo} className="w-16 h-16 rounded-full" alt="logo" />
+        <h1 className="text-2xl font-bold text-[#F5E6D3]">M-Libry</h1>
       </div>
 
       {/* Menu */}
-      <nav className="flex flex-col space-y-5 mt-8 text-sm border-t-5 border-[#B67438] py-8 ">
-        <a
-          href="/admin/dashboard"
-          className="flex items-center py-2 hover:text-[#D29D6A] font-medium"
-        >
-          <FiHome className="w-5 h-5 mr-4" /> Dashboard
-        </a>
+      <nav className="flex flex-col space-y-4 text-sm px-1 border-t border-[#B67438] pt-4">
+        <NavLink to="/admin/dashboard" className={({ isActive }) => linkClasses(isActive)}>
+          <FiHome className="w-5 h-5 mr-3" /> Dashboard
+        </NavLink>
+        <NavLink to="/admin/users" className={({ isActive }) => linkClasses(isActive)}>
+          <FiUsers className="w-5 h-5 mr-3" /> Manage Users
+        </NavLink>
+        <NavLink to="/admin/books" className={({ isActive }) => linkClasses(isActive)}>
+          <PiBooksDuotone className="w-5 h-5 mr-3" /> Manage Books
+        </NavLink>
+        <NavLink to="/admin/borrowings" className={({ isActive }) => linkClasses(isActive)}>
+          <FiClipboard className="w-5 h-5 mr-3" /> Borrowings & Returns
+        </NavLink>
+        <NavLink to="/admin/reports" className={({ isActive }) => linkClasses(isActive)}>
+          <MdOutlineReport className="w-5 h-5 mr-3" /> Reports
+        </NavLink>
 
-        <a
-          href="/admin/users"
-          className="flex items-center py-2 hover:text-[#D29D6A] font-medium"
-        >
-          <FiUsers className="w-5 h-5 mr-4" /> Manage Users
-        </a>
+        <hr className="my-4 border-[#B67438]" />
 
-        <a
-          href="/admin/books"
-          className="flex items-center py-2 hover:text-[#D29D6A] font-medium"
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white rounded hover:bg-[#ad6826] transition"
         >
-          <PiBooksDuotone className="w-5 h-5 mr-4" /> Manage Books
-        </a>
-
-        <a
-          href="/admin/borrowings"
-          className="flex items-center py-2 hover:text-[#D29D6A] font-medium"
-        >
-          <FiClipboard className="w-5 h-5 mr-4" /> Borrowings & Returns
-        </a>
-
-        <a
-          href="/admin/reports"
-          className="flex items-center py-2 hover:text-[#D29D6A] font-medium"
-        >
-          <MdOutlineReport className="w-5 h-5 mr-4" /> Reports
-        </a>
+          <AiOutlineLogout className="w-5 h-5" /> Logout
+        </button>
       </nav>
 
-      {/* Footer */}
-      <div className="mt-auto pt-6 border-t border-[#B67438] text-sm">
-        <p className="text-[#D29D6A]">© 2025 M-Libry Admin</p>
+      <div className="mt-auto pt-6  border-[#B67438] text-sm text-center">
+        <p className="text-[#D29D6A]">© 2025 M-Libry </p>
       </div>
     </aside>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef,useEffect, useState } from "react";
 import { Link } from "react-router-dom"; // 
 import SidebarPeminjam from "../Dashboard/sidebarPeminjam";
 import { api, authHeaders } from "../../../../src/api";
@@ -22,6 +22,8 @@ const MyBorrowings = () => {
   const [filterStatus, setFilterStatus] = useState("All");
   const userID = localStorage.getItem("UserID");
 
+
+  
   // Ambil data peminjaman
   const fetchBorrowings = async () => {
     try {
@@ -161,16 +163,51 @@ if (!result.isConfirmed) return;
     if (days === 0) return "Last day!";
     return `${Math.abs(days)} Days late!`;
   };
+const activeBorrowings = borrowings.filter(
+  (b) =>
+    ["Borrowed", "Late"].includes(b.StatusPeminjaman) &&
+    !b.pengembalian // pastikan belum dikembalikan
+).length;
 
-  const activeBorrowings = borrowings.filter(
-    (b) => b.StatusPeminjaman === "Borrowed"
-  ).length;
 
-  const statusFiltered = filteredBorrowings.filter(
-    (b) => filterStatus === "All" || b.StatusPeminjaman === filterStatus
-  );
+console.log("RAW borrowings:", borrowings.length);
+console.log("Filtered BEFORE STATUS:", filteredBorrowings.length);
 
-  const booksPerRow = 3;
+console.log(
+  borrowings.map(b => ({
+    id: b.PeminjamanID,
+    book: b.BukuID,
+    status: b.StatusPeminjaman,
+    return: b.TanggalPengembalian
+  }))
+);
+
+console.log(
+  filteredBorrowings.map(b => ({
+    id: b.PeminjamanID,
+    book: b.BukuID,
+    merged: b.title || "NO BOOK MATCH!"
+  }))
+);
+
+
+const statusFiltered = filteredBorrowings.filter((b) => {
+  const isLate =
+    b.StatusPeminjaman === "Borrowed" &&
+    new Date(b.TanggalPengembalian) < new Date();
+
+  const isActiveBorrowed =
+    b.StatusPeminjaman === "Borrowed" &&
+    new Date(b.TanggalPengembalian) >= new Date();
+
+  if (filterStatus === "All") return true;
+  if (filterStatus === "Late") return isLate;
+  if (filterStatus === "Borrowed") return isActiveBorrowed;
+  return b.StatusPeminjaman === filterStatus;
+});
+
+const booksPerRow = 3;
+
   const rows = [];
   for (let i = 0; i < statusFiltered.length; i += booksPerRow) {
     rows.push(statusFiltered.slice(i, i + booksPerRow));
@@ -193,8 +230,8 @@ if (!result.isConfirmed) return;
   return (
     <div className="min-h-screen bg-[#F5E6D3] flex text-gray-800">
       <SidebarPeminjam />
-      <ToastContainer />
-      <div className="flex-1 mt-10 px-6">
+      
+      <div className="flex-1 mt-10 md:pl-72 px-6">
         <Hero3 />
 
         {/* Search */}
@@ -233,7 +270,7 @@ if (!result.isConfirmed) return;
         </div>
 
         {/* List buku */}
-        <div className="flex flex-col gap-8 border-t-8 border-[#B67438]  pt-4">
+        <div className="flex flex-col gap-8 border-t-4 border-[#B67438]  pt-4">
           {visibleRows.map((row, rowIndex) => (
             <motion.div
               key={rowIndex}
@@ -242,12 +279,22 @@ if (!result.isConfirmed) return;
               transition={{ duration: 0.4 }}
               className={`flex justify-center gap-6 pb-4 ${
                 rowIndex !== visibleRows.length - 1
-                  ? "border-b-8 border-[#B67438]"
+                  ? "border-b-4 border-[#B67438]"
                   : ""
               }`}
             >
-              {row.map((item) => {
+             {row.map((item) => {
+
+  if (!item.buku) {
+    console.warn("MISSING BOOK DATA:", item);
+    return null;   // ⛔ cegah error & biarkan render lanjut
+  }
+
+                console.log("RENDER CARD:", item.PeminjamanID, item.buku);
+
                 const book = item.buku || {};
+
+
                 const alreadyReturned = !!item.pengembalian;
                 const returnedDate = item.pengembalian?.TanggalPengembalian;
 
@@ -319,16 +366,17 @@ if (!result.isConfirmed) return;
                         </div>
                       </Link>
 
-                      {!alreadyReturned && status === "Borrowed" && (
-                        <button
-                          onClick={() =>
-                            handleReturn(item.PeminjamanID, book.BukuID)
-                          }
-                          className="mt-2 w-full px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition"
-                        >
-                          Return
-                        </button>
-                      )}
+                     {!alreadyReturned && (status === "Borrowed" || status === "Late") && (
+  <button
+    onClick={() =>
+      handleReturn(item.PeminjamanID, book.BukuID)
+    }
+    className=" w-full px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition"
+  >
+    Return
+  </button>
+)}
+
                       </div>
                 );
               })}

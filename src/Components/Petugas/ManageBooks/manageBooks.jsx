@@ -162,7 +162,7 @@ const BookModal = ({ mode = "add", book = null, categories = [], API_URL, header
   );
 };
 
-// --- Category Manager Modal (small) ---
+
 const CategoryManager = ({ open, onClose, onReload, API_URL, headers }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -246,18 +246,22 @@ const CategoryManager = ({ open, onClose, onReload, API_URL, headers }) => {
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             {loading ? <p>Loading...</p> : (
-              <ul className="space-y-2">
-                {categories.map(cat => (
-                  <li key={cat.KategoriID} className="flex items-center justify-between p-2 border rounded">
-                    <div className="font-medium">{cat.NamaKategori}</div>
-                    <div className="flex gap-2">
-                      <button className="text-blue-600" onClick={() => setEdit(cat)}>Edit</button>
-                      <button className="text-red-600" onClick={() => handleDelete(cat.KategoriID)}>Delete</button>
-                    </div>
-                  </li>
-                ))}
-                {categories.length === 0 && <div className="text-sm text-gray-500">No categories yet.</div>}
-              </ul>
+
+
+             <ul className="space-y-2 max-h-96 overflow-y-auto">
+  {categories.map(cat => (
+    <li key={cat.KategoriID} className="flex items-center justify-between p-2 border rounded">
+      <div className="font-medium">{cat.NamaKategori}</div>
+      <div className="flex gap-2">
+        <button className="text-blue-600" onClick={() => setEdit(cat)}>Edit</button>
+        <button className="text-red-600" onClick={() => handleDelete(cat.KategoriID)}>Delete</button>
+      </div>
+    </li>
+  ))}
+  {categories.length === 0 && <div className="text-sm text-gray-500">No categories yet.</div>}
+</ul>
+
+
             )}
           </div>
 
@@ -419,64 +423,77 @@ const ManageBooks = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <SidebarPetugas />
-      <main className="flex-1 bg-[#F5E6D3] p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-[#7B3F00]">Manage Books</h1>
-          <div className="flex gap-3 items-center">
-            <button onClick={() => setShowCategoryManager(true)} className="px-3 py-2 border rounded">Manage Categories</button>
-           
-          </div>
-        </div>
+    <div className="flex min-h-screen overflow-hidden">
+  <SidebarPetugas />
+  <main className="flex-1 bg-[#F5E6D3] md:pl-72 p-8 overflow-x-hidden">
+     <div className="flex items-center justify-between mb-6">
+  <div className="flex items-center gap-20">
+    <h1 className="text-3xl font-bold text-[#7B3F00]">Manage Books</h1>
+    <input
+      value={query}
+      onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+      placeholder="Search..."
+  className="p-2 border border-[#D29D6A] rounded-md outline-none shadow-sm w-100 bg-white"
 
-        {/* summary */}
-        <div className="flex gap-4 mb-6">
-          <div className="bg-white rounded-lg p-4 shadow flex-1">
-            <div className="text-sm text-gray-500">Total Books</div>
-            <div className="text-2xl font-bold text-[#7B3F00]">{counts.total}</div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <div className="text-sm text-gray-500">Categories</div>
-            <div className="text-xl font-semibold text-[#7B3F00]">{categories.length}</div>
-          </div>
-        </div>
 
-        {/* filters + search */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-2 overflow-auto">
-            <button
-              onClick={() => { setActiveCategory("all"); setPage(1); }}
-              className={`px-4 py-2 rounded-full font-medium ${activeCategory === "all" ? "bg-[#7B3F00] text-white" : "bg-white text-[#7B3F00] hover:bg-[#f0e6de]"}`}
-            >
-              All ({counts.total})
-            </button>
+    />
+  </div>
+  <button
+    onClick={() => setShowCategoryManager(true)}
+   className="px-4 py-2 border border-[#7B3F00] text-[#7B3F00] rounded-md bg-white shadow hover:bg-[#f0e6de] font-medium"
 
-            {categories.map(cat => (
-              <button
-                key={cat.KategoriID}
-                onClick={() => { setActiveCategory(cat.KategoriID); setPage(1); }}
-                className={`px-4 py-2 rounded-full font-medium ${activeCategory === cat.KategoriID ? "bg-[#7B3F00] text-white" : "bg-white text-[#7B3F00] hover:bg-[#f0e6de]"}`}
-              >
-                {cat.NamaKategori} ({counts[cat.KategoriID] || 0})
-              </button>
-            ))}
-          </div>
+  >
+    Manage Categories
+  </button>
+</div>
 
-          <div className="flex gap-2 items-center">
-            <input
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-              placeholder="Search title, author, publisher..."
-              className="p-2 rounded-md border outline-none"
-            />
-          </div>
-        </div>
+{/* summary */}
+<div className="flex gap-4 mb-6">
+  <div className="bg-white rounded-lg p-4 shadow flex-1">
+    <div className="text-sm text-gray-500">Total Books</div>
+    <div className="text-2xl font-bold text-[#7B3F00]">{counts.total}</div>
+  </div>
+  <div className="bg-white rounded-lg p-4 shadow">
+    <div className="text-sm text-gray-500">Categories</div>
+    <div className="text-xl font-semibold text-[#7B3F00]">{categories.length}</div>
+  </div>
+</div>
+
+{/* kategori */}
+<div className="flex gap-2 overflow-x-auto mb-4 pb-2">
+  <button
+    onClick={() => { setActiveCategory("all"); setPage(1); }}
+    className={`flex-shrink-0 px-4 py-2 rounded-full font-medium ${
+      activeCategory === "all"
+        ? "bg-[#7B3F00] text-white"
+        : "bg-white text-[#7B3F00] hover:bg-[#f0e6de]"
+    }`}
+  >
+    All ({counts.total})
+  </button>
+
+  {categories.map(cat => (
+    <button
+      key={cat.KategoriID}
+      onClick={() => { setActiveCategory(cat.KategoriID); setPage(1); }}
+      className={`flex-shrink-0 px-4 py-2 rounded-full font-medium ${
+        activeCategory === cat.KategoriID
+          ? "bg-[#7B3F00] text-white"
+          : "bg-white text-[#7B3F00] hover:bg-[#f0e6de]"
+      }`}
+    >
+      {cat.NamaKategori} ({counts[cat.KategoriID] || 0})
+    </button>
+  ))}
+</div>
+
+
+         
 
         {/* table */}
         <div className="bg-white rounded-2xl shadow overflow-hidden">
           <table className="min-w-full">
-            <thead className="bg-[#D29D6A] text-white">
+            <thead className="bg-[#7B3F00] text-white">
               <tr>
                 <th className="p-3 text-left">No</th>
                 <th className="p-3 text-left">Cover</th>
@@ -516,7 +533,7 @@ const ManageBooks = () => {
                     {(b.Kategori || []).length > 0 ? (b.Kategori.map(k => <CategoryBadge key={k.KategoriID} name={k.NamaKategori} />)) : "-"}
                   </td>
                   <td className="p-3 flex gap-2">
-                    <button onClick={() => setEditBook(b)} className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700">Edit</button>
+                    <button onClick={() => setEditBook(b)} className="px-3 py-1 rounded bg-[#7B3F00] text-white hover:bg-[#D29D6A] ">Edit</button>
                     <button onClick={() => handleDelete(b.BukuID)} className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">Delete</button>
                   </td>
                 </tr>

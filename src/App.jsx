@@ -4,7 +4,7 @@ import { ToastContainer } from "react-toastify";
 // import { FaBookOpen } from "react-icons/fa";
 import "react-toastify/dist/ReactToastify.css";
 
-// ===== Peminjam =====
+//peminjam
 import Login from "./Components/Peminjam/User/Login";
 import Register from "./Components/Peminjam/User/Register";
 import LandingPage from "./Components/page/landingPage";
@@ -19,8 +19,10 @@ import Peminjaman from "./Components/Peminjam/Peminjaman/peminjaman";
 import Collection from "./Components/Peminjam/Collection/collection";
 import SearchResult from "./Components/Peminjam/Dashboard/SearchResult";
 import UserDetail from "./Components/Peminjam/User/UserDetail";
+import ForgotPassword from "./Components/Peminjam/User/ForgotPassword";
+import ResetPassword from "./Components/Peminjam/User/ResetPassword";
 
-// ===== Petugas =====
+//  Petugas
 import DashboardPetugas from "./Components/Petugas/Dashboard/dashboardPetugas";
 import SidebarPetugas from "./Components/Petugas/Sidebar/sidebarPetugas";
 import BorrowerData from "./Components/Petugas/BorrowerData/borrowerData";
@@ -28,7 +30,7 @@ import Borrowings from "./Components/Petugas/Borrowings/borrowings";
 import ManageBooks from "./Components/Petugas/ManageBooks/manageBooks";
 import Returned from "./Components/Petugas/Borrowings/returned";
 
-// ===== Admin =====
+// Admin 
 import DashboardAdmin from "./Components/Administrator/Dashboard/dashboardAdmin";
 import ManageUsers from "./Components/Administrator/Manage Users/manageUsers";
 import ManageBooksAdmin from "./Components/Administrator/Manage BooksAdmin/manageBooks";
@@ -37,7 +39,7 @@ import ReturnsAd from "./Components/Administrator/Borrowings/returns";
 import Reports from "./Components/Administrator/Report/reports";
 
 function App() {
-  // 🌟 Global preloader
+  
   const [loading, setLoading] = useState(true);
 
 useEffect(() => {
@@ -47,8 +49,9 @@ useEffect(() => {
   
  
 
-  // 🌟 Setelah preloader, baru render router
+ 
   return (
+    <>
     <BrowserRouter>
       <Routes>
         {/* Peminjam */}
@@ -66,6 +69,8 @@ useEffect(() => {
         <Route path="/peminjaman" element={<Peminjaman />} />
         <Route path="/collection" element={<Collection />} />
         <Route path="/search" element={<SearchResult />} />
+        <Route path="/forgotPassword" element={<ForgotPassword />} />
+         <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Petugas */}
         <Route path="/sidebarPetugas" element={<SidebarPetugas />} />
@@ -84,8 +89,10 @@ useEffect(() => {
         <Route path="/admin/reports" element={<Reports />} />
       </Routes>
 
-      <ToastContainer position="top-center" autoClose={3000} />
     </BrowserRouter>
+      <ToastContainer position="top-center" autoClose={3000} />
+      
+      </>
   );
 }
 

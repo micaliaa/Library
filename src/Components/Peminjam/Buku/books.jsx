@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import Hero2 from "../../../Components/Peminjam/Hero/heroBooks";
 import { api, authHeaders } from "../../../../src/api";
 import SidebarPeminjam from "../Dashboard/sidebarPeminjam";
-import { TbChecklist, TbBooks, TbFolder } from "react-icons/tb";
+import {  TbBooks, TbFolder } from "react-icons/tb";
+import { CiBookmarkCheck } from "react-icons/ci";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SearchBuku from "../Buku/search";
@@ -21,115 +22,220 @@ const Book = () => {
   const [borrowed, setBorrowed] = useState([]);
   const [collection, setCollection] = useState([]);
   const [user, setUser] = useState(null);
+ 
+const mergeLocalBorrowings = (serverBorrowings) => {
+  const saved = JSON.parse(localStorage.getItem("borrowings") || "[]");
 
-  useEffect(() => {
-    const fetchBooksAndUser = async () => {
-      try {
-        const UserID = localStorage.getItem("UserID");
-        if (!UserID) throw new Error("User not logged in");
+  return serverBorrowings.map((item) => {
+    const localItem = saved.find(b => b.PeminjamanID === item.PeminjamanID);
 
-        const [booksRes, userRes, peminjamanRes, koleksiRes] = await Promise.all([
-          api.get("/buku", { headers: authHeaders() }),
-          api.get(`/users/${UserID}`, { headers: authHeaders() }),
-          api.get(`/peminjaman/user/${UserID}`, { headers: authHeaders() }),
-          api.get(`/koleksi/user/${UserID}`, { headers: authHeaders() }),
-        ]);
+    return localItem && localItem.StatusPeminjaman === "Finished"
+      ? { ...item, ...localItem } // pakai data local (Status + pengembalian)
+      : item;
+  });
+};
 
-        const normalizedBorrowings = normalizeStatuses(peminjamanRes.data);
 
-        const saved = JSON.parse(localStorage.getItem("borrowings") || "[]");
-        const mergedBorrowings = normalizedBorrowings.map((item) => {
-          const localItem = saved.find((b) => b.PeminjamanID === item.PeminjamanID);
-          return localItem && localItem.StatusPeminjaman === "Finished"
-            ? { ...item, ...localItem }
-            : item;
-        });
+   useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userID = localStorage.getItem("UserID");
+      if (!token || !userID) return;
 
-        const activeCount = mergedBorrowings.filter(
-          (b) => b.StatusPeminjaman?.toLowerCase() === "borrowed"
-        ).length;
+      const [userRes, bookRes, peminjamanRes, koleksiRes] = await Promise.all([
+        api.get(`/users/${userID}`, { headers: authHeaders() }),
+        api.get("/buku", { headers: authHeaders() }),
+        api.get(`/peminjaman/user/${userID}`, { headers: authHeaders() }),
+        api.get(`/koleksi/user/${userID}`, { headers: authHeaders() }),
+      ]);
 
-        setUser({
-          ...userRes.data,
-          ActiveBorrowCount: activeCount,
-          CollectionCount: koleksiRes.data.length,
-        });
+  const normalizedBorrowings = mergeLocalBorrowings(
+  normalizeStatuses(peminjamanRes.data)
+);
 
-        setBooksData(booksRes.data);
-        setFilteredBooks(booksRes.data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch book data.");
-      } finally {
-        setLoading(false);
-      }
-    };
+console.log("Normalized borrowings:", normalizedBorrowings);
 
-    fetchBooksAndUser();
-  }, []);
+
+console.log(
+  "Borrowings detail:",
+  normalizedBorrowings.map(b => ({
+    BukuID: b.BukuID,
+    Status: b.StatusPeminjaman,
+    TglPengembalian: b.TanggalPengembalian,
+    TglDikembalikan: b.TanggalDikembalikan
+  }))
+);
+
+
+      // Ambil yang benar-benar aktif
+   const activeBorrowedBooks = normalizedBorrowings.filter(b => {
+  const status = b.StatusPeminjaman?.toLowerCase();
+  return (
+    (status === "borrowed" || status === "late") &&
+    b.TanggalDikembalikan === null
+  );
+});
+
+
+
+      setUser({
+        ...userRes.data,
+          Borrowings: normalizedBorrowings, 
+        ActiveBorrowCount: activeBorrowedBooks.length,
+        CollectionCount: koleksiRes.data.length,
+      });
+
+      setBooksData(bookRes.data);
+      setFilteredBooks(bookRes.data);
+      setBorrowed(activeBorrowedBooks.map(b => b.BukuID));
+      setCollection(koleksiRes.data.map(item => item.BukuID));
+
+    } catch (err) {
+      console.error(err);
+      setError("Gagal mengambil data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
+
+ // POLLING agar halaman Book update otomatis jika ada perubahan peminjaman
+useEffect(() => {
+  const userID = localStorage.getItem("UserID");
+  if (!userID) return;
+
+  const updateBorrowings = async () => {
+    try {
+      const res = await api.get(`/peminjaman/user/${userID}`, { headers: authHeaders() });
+ const normalized = mergeLocalBorrowings(normalizeStatuses(res.data));
+
+      const activeBorrowedBooks = normalized.filter(b => {
+        const status = b.StatusPeminjaman?.toLowerCase();
+       const isBorrowed = ["borrowed", "late"].includes(status);
+
+
+     
+      const notReturned =
+  !b.TanggalDikembalikan ||
+  b.TanggalDikembalikan === null ||
+  b.TanggalDikembalikan === "null" ||
+  b.TanggalDikembalikan === "" ||
+  b.TanggalDikembalikan === "0000-00-00";
+
+        return isBorrowed && notReturned;
+      });
+
+      setUser(prev => prev ? ({
+        ...prev,
+        ActiveBorrowCount: activeBorrowedBooks.length,
+      }) : null);
+
+    setBorrowed(
+  activeBorrowedBooks.length > 0
+    ? activeBorrowedBooks.map(b => b.BukuID)
+    : []
+);
+
+
+    } catch (err) {
+      console.error("Gagal update peminjaman:", err);
+    }
+  };
+
+  // Fetch pertama
+  updateBorrowings();
+
+  // Polling setiap 5 detik
+  const interval = setInterval(updateBorrowings, 5000);
+
+  return () => clearInterval(interval);
+}, []);
+
+ 
+
+
+
 
 
   // helper format date
-const formatDate = (date) => {
-  const d = new Date(date);
-  const month = "" + (d.getMonth() + 1);
-  const day = "" + d.getDate();
-  const year = d.getFullYear();
-  return [year, month.padStart(2, "0"), day.padStart(2, "0")].join("-");
-};
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const month = "" + (d.getMonth() + 1);
+    const day = "" + d.getDate();
+    const year = d.getFullYear();
+    return [year, month.padStart(2, "0"), day.padStart(2, "0")].join("-");
+  };
 
 
   // Borrow Book
   const handlePinjamBuku = async (BukuID) => {
-  const UserID = localStorage.getItem("UserID");
-  if (!UserID) {
-    toast.warning("⚠️ Please log in first.");
-    return;
-  }
+    const UserID = localStorage.getItem("UserID");
+    if (!UserID) {
+      toast.warning("⚠️ Please log in first.");
+      return;
+    }
 
-  const activeCount = user?.ActiveBorrowCount || 0;
-  if (activeCount >= 3) {
-    toast.error("❌ You have reached the maximum of 3 active borrowings.");
-    return;
-  }
 
-  setBorrowingIds((prev) => [...prev, BukuID]);
-  try {
-    const today = new Date();
-    const sevenDaysLater = new Date();
-    sevenDaysLater.setDate(today.getDate() + 7);
 
-    const response = await api.post(
-      "/peminjaman",
-      {
-        UserID,
-        BukuID,
-        TanggalPeminjaman: formatDate(today),       
-        TanggalPengembalian: formatDate(sevenDaysLater), 
-        StatusPeminjaman: "Dipinjam",
-      },
-      { headers: authHeaders() }
-    );
+    // CEK ADA BUKU LATE
+const hasLateBook = Array.isArray(user?.Borrowings)
+  ? user.Borrowings.some(
+      (b) => (b.StatusPeminjaman || "").toLowerCase().trim() === "late"
+    )
+  : false;
 
-    const { PeminjamanID, TanggalPengembalian } = response.data;
-    toast.success(
-      `✅ Book borrowed successfully!
-      }`
-    );
+if (hasLateBook) {
+  toast.error("❌ You cannot borrow a new book because you have a Late book.");
+  return;
+}
 
-    setBorrowed((prev) => [...prev, BukuID]);
-    setUser((prev) => ({
-      ...prev,
-      ActiveBorrowCount: (prev?.ActiveBorrowCount || 0) + 1,
-    }));
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-    toast.error("❌ Failed to borrow the book.");
-  } finally {
-    setBorrowingIds((prev) => prev.filter((id) => id !== BukuID));
-  }
-};
 
+    const activeCount = user?.ActiveBorrowCount || 0;
+    if (activeCount >= 3) {
+      toast.error("You have reached the maximum limit of 3 active books. Please return one before borrowing again.");
+      return;
+    }
+
+    setBorrowingIds((prev) => [...prev, BukuID]);
+    try {
+      const today = new Date();
+      const sevenDaysLater = new Date();
+      sevenDaysLater.setDate(today.getDate() + 7);
+
+      const response = await api.post(
+        "/peminjaman",
+        {
+          UserID,
+          BukuID,
+          TanggalPeminjaman: formatDate(today),
+          TanggalPengembalian: formatDate(sevenDaysLater),
+          StatusPeminjaman: "Dipinjam",
+        },
+        { headers: authHeaders() }
+      );
+
+      const { PeminjamanID, TanggalPengembalian } = response.data;
+      toast.success(
+        `✅ Book borrowed successfully!
+        `
+      );
+
+      setBorrowed((prev) => [...prev, BukuID]);
+     
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      toast.error("❌ Failed to borrow the book.");
+    } finally {
+      setBorrowingIds((prev) => prev.filter((id) => id !== BukuID));
+    }
+  };
+
+  console.log(borrowingIds);
   // Add to Collection
   const handleAddToCollection = async (BukuID) => {
     const UserID = localStorage.getItem("UserID");
@@ -169,7 +275,7 @@ const formatDate = (date) => {
   return (
     <div className="min-h-screen bg-[#F5E6D3] text-white flex flex-col md:flex-row">
       <SidebarPeminjam className="hidden md:flex" />
-      <div className="flex-1 mt-10 px-4">
+   <div className="flex-1 p-4 sm:p-8 overflow-y-auto md:pl-72 relative">
         <Hero2 />
 
         {/* User Info */}
@@ -200,19 +306,22 @@ const formatDate = (date) => {
         </div>
 
         {/* Books Grid */}
-        <div className="space-y-6 border-t-10 border-[#B67438] pt-4">
+
+        <div className="space-y-6 border-t-4  border-[#B67438] pt-4 ">
           {rows.map((row, rowIndex) => (
             <div
               key={rowIndex}
-              className="flex flex-wrap justify-center gap-6 pb-4 border-b-10 border-[#B67438]"
+              className="flex flex-wrap gap-6 justify-start pb-4 border-b-4 border-[#B67438]"
             >
+
               {row.map((book) => {
                 const isBorrowing = borrowingIds.includes(book.BukuID);
                 const isBorrowed = borrowed.includes(book.BukuID);
+
                 return (
                   <div
                     key={book.BukuID}
-                    className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0 w-full sm:w-[300px] h-[160px] overflow-hidden"
+                    className="flex bg-white border border-[#B67438] shadow-md hover:shadow-lg transition flex-shrink-0 w-full sm:w-[293px] h-[160px] overflow-hidden"
                   >
                     <img
                       src={`${API_URL}/${book.Gambar}`}
@@ -237,47 +346,57 @@ const formatDate = (date) => {
                           ⭐ {book.RataRataRating ? Number(book.RataRataRating).toFixed(1) : "4.5"}
                         </p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
+
+
+
+
+                     <div className="flex items-center gap-2 mt-2">
                         <Link
-                          to={`/detail/${book.BukuID}`}
-                          className="px-3 py-1 text-xs bg-[#D29D6A] text-white hover:bg-[#B67438] transition"
-                        >
-                          View
-                        </Link>
+                                to={`/detail/${book.BukuID}`}
+                                className="flex-1 text-center px-3 py-1 text-xs bg-[#D29D6A] text-white hover:bg-[#B67438] transition rounded"
+                              >
+                                View
+                              </Link>
+
                         <button
-                          onClick={() => handlePinjamBuku(book.BukuID)}
-                          disabled={isBorrowing || isBorrowed}
-                          className={`px-1 py-1 text-xs transition ${
-                            isBorrowed
-                              ? "bg-green-500 text-white"
-                              : isBorrowing
+                           onClick={() => handlePinjamBuku(book.BukuID)}
+                          // disabled={isBorrowing || isBorrowed}
+                          className={`flex-1 text-center px-3 py-1 text-xs transition rounded ${isBorrowed
+                            ? "bg-green-400 text-white"
+                            : isBorrowing
                               ? "bg-gray-300 text-gray-700 cursor-not-allowed"
                               : "bg-[#7B3F00] text-white hover:bg-[#A15C2D]"
-                          }`}
+                            }`}
                         >
                           {isBorrowed ? "Borrowed" : isBorrowing ? "⏳..." : "Borrow"}
                         </button>
+
                         <button
                           onClick={() => handleAddToCollection(book.BukuID)}
                           disabled={collection.includes(book.BukuID)}
-                          className={`px-3 py-1 flex justify-center text-xs items-center transition ${
-                            collection.includes(book.BukuID)
-                              ? "bg-[#ad6826] text-white"
-                              : "bg-[#D29D6A] text-white hover:bg-[#ad6826]"
-                          }`}
+                          className={`flex-1 text-center px-1 py-1 text-xs transition rounded  ${collection.includes(book.BukuID)
+                            ? "bg-[#ad6826] text-white"
+                            : "bg-[#D29D6A] text-white hover:bg-[#ad6826]"
+                            }`}
                         >
-                          {collection.includes(book.BukuID) ? <TbChecklist  className="text-xs" /> : "+"}
+                          {collection.includes(book.BukuID) ?  <CiBookmarkCheck className="mx-auto " /> : "+"}
                         </button>
                       </div>
+
                     </div>
                   </div>
+
+
+
                 );
+
+
               })}
             </div>
           ))}
         </div>
 
-        <ToastContainer position="top-right" autoClose={2500} hideProgressBar />
+        <ToastContainer position="top-center"autoClose={2500} hideProgressBar />
       </div>
     </div>
   );

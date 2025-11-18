@@ -48,11 +48,11 @@ const BorrowingsAd = () => {
   return (
     <div className="flex min-h-screen">
       <SidebarAdmin/>
-      <main className="flex-1 bg-[#F5E6D3] p-8 py-15">
+      <main className="flex-1 ml-64 bg-[#F5E6D3] p-8 py-15">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-[#7B3F00]">Borrowings</h1>
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-[#7B3F00] text-white px-4 py-2 rounded hover:bg-[#D29D6A]"
             onClick={() => navigate('/admin/returns')}
           >
             View Returns
