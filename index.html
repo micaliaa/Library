@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" sizes="800x800" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>M-Libry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      /* Animations */
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }
+      @keyframes fadeText { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+      .animate-spin-custom { animation: spin 2.8s linear infinite; }
+      .animate-pulse-custom { animation: pulse 1.5s infinite ease-in-out; }
+      .animate-fadeText { animation: fadeText 1.8s ease-in-out infinite; }
+    </style>
+  </head>
+
+  <body class="relative">
+    <!-- Loader -->
+    <div id="initial-loader" class="fixed inset-0 bg-[#fff9f3] flex flex-col justify-center items-center z-[9999] opacity-100 transition-opacity duration-600">
+      <div class="relative w-[90px] h-[90px] flex justify-center items-center">
+        <!-- Ring -->
+        <div class="absolute w-[90px] h-[90px] border-4 border-[#b67438] border-t-transparent rounded-full opacity-50 animate-spin-custom"></div>
+        <!-- Logo / SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-[60px] h-[60px] fill-[#b67438] animate-pulse-custom">
+          <path d="M320 216C368.6 216 408 176.6 408 128C408 79.4 368.6 40 320 40C271.4 40 232 79.4 232 128C232 176.6 271.4 216 320 216zM320 514.7L320 365.4C336.3 358.6 352.9 351.7 369.7 344.7C408.7 328.5 450.5 320.1 492.8 320.1L512 320.1L512 480.1L492.8 480.1C433.7 480.1 375.1 491.8 320.5 514.6L320 514.8zM320 296L294.9 285.5C248.1 266 197.9 256 147.2 256L112 256C85.5 256 64 277.5 64 304L64 496C64 522.5 85.5 544 112 544L147.2 544C197.9 544 248.1 554 294.9 573.5L307.7 578.8C315.6 582.1 324.4 582.1 332.3 578.8L345.1 573.5C391.9 554 442.1 544 492.8 544L528 544C554.5 544 576 522.5 576 496L576 304C576 277.5 554.5 256 528 256L492.8 256C442.1 256 391.9 266 345.1 285.5L320 296z"/>
+        </svg>
+      </div>
+      <p class="mt-4 text-[#7b3f00] text-lg font-semibold tracking-wide animate-fadeText">Just a moment...</p>
+    </div>
+
+    <div id="root"></div>
+
+    <script type="module" src="/src/main.jsx"></script>
+
+    <script>
+      window.addEventListener("load", () => {
+        const loader = document.getElementById("initial-loader");
+        if (loader) {
+          loader.classList.add("opacity-0");
+          setTimeout(() => loader.remove(), 600);
+        }
+      });
+    </script>
+  </body>
+</html>
